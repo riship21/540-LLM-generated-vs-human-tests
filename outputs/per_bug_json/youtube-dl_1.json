@@ -1,0 +1,88 @@
+{
+  "project": "youtube-dl",
+  "bug_id": "1",
+  "slug": "youtube-dl_1",
+  "bug_info": {
+    "python_version": "\"3.7.0\"",
+    "buggy_commit_id": "\"99036a1298089068dcf80c0985bfcc3f8c24f281\"",
+    "fixed_commit_id": "\"1cc47c667419e0eadc0a6989256ab7b276852adf\"",
+    "test_file": "\"test/test_utils.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\youtube-dl_1.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "youtube_dl/utils.py",
+      "new_path": "youtube_dl/utils.py",
+      "display_path": "youtube_dl/utils.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 2,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -2574,8 +2574,8 @@ def _match_one(filter_part, dct):",
+          "lines": [
+            "         return op(actual_value, comparison_value)",
+            " ",
+            "     UNARY_OPERATORS = {",
+            "-        '': lambda v: v is not None,",
+            "-        '!': lambda v: v is None,",
+            "+        '': lambda v: (v is True) if isinstance(v, bool) else (v is not None),",
+            "+        '!': lambda v: (v is False) if isinstance(v, bool) else (v is None),",
+            "     }",
+            "     operator_rex = re.compile(r'''(?x)\\s*",
+            "         (?P<op>%s)\\s*(?P<key>[a-z_]+)"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "youtube_dl/utils.py",
+      "new_path": "youtube_dl/utils.py",
+      "display_path": "youtube_dl/utils.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 2,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -2574,8 +2574,8 @@ def _match_one(filter_part, dct):",
+          "lines": [
+            "         return op(actual_value, comparison_value)",
+            " ",
+            "     UNARY_OPERATORS = {",
+            "-        '': lambda v: v is not None,",
+            "-        '!': lambda v: v is None,",
+            "+        '': lambda v: (v is True) if isinstance(v, bool) else (v is not None),",
+            "+        '!': lambda v: (v is False) if isinstance(v, bool) else (v is None),",
+            "     }",
+            "     operator_rex = re.compile(r'''(?x)\\s*",
+            "         (?P<op>%s)\\s*(?P<key>[a-z_]+)"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "",
+  "human_tests": [],
+  "human_test_names": [],
+  "human_test_files": [],
+  "human_test_count": 0
+}

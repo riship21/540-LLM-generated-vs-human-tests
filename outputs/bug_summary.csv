@@ -1,0 +1,7 @@
+project,bug_id,files_changed,source_files_changed,test_files_changed,human_test_added,human_test_modified,human_test_count,human_test_names,human_test_files,patch_path,buggy_commit,fixed_commit,failing_tests,notes
+ansible,1,1,1,0,False,False,0,,,C:\COSC540\github_mining_starter\data\patches\ansible_1.patch,"""25c5388fdec9e56517a93feb5e8d485680946c25""","""343ffaa18b63c92e182b16c3ad84b8d81ca4df69""","""test/units/galaxy/test_collection.py""",
+ansible,2,1,1,0,False,False,0,,,C:\COSC540\github_mining_starter\data\patches\ansible_2.patch,"""de59b17c7f69d5cfb72479b71776cc8b97e29a6b""","""5b9418c06ca6d51507468124250bb58046886be6""","""test/units/utils/test_version.py""",
+pandas,1,1,1,0,False,False,0,,,C:\COSC540\github_mining_starter\data\patches\pandas_1.patch,"""3fd150c""","""e41ee47a90bb1d8a1fa28fcefcd45ed8ef5cb946""","""pandas/tests/dtypes/test_dtypes.py""",
+pandas,2,1,1,0,False,False,0,,,C:\COSC540\github_mining_starter\data\patches\pandas_2.patch,"""2740fb4""","""55e8891f6d33be14e0db73ac06513129503f995c""","""pandas/tests/indexing/test_scalar.py""",
+youtube-dl,1,1,1,0,False,False,0,,,C:\COSC540\github_mining_starter\data\patches\youtube-dl_1.patch,"""99036a1298089068dcf80c0985bfcc3f8c24f281""","""1cc47c667419e0eadc0a6989256ab7b276852adf""","""test/test_utils.py""",
+youtube-dl,2,1,1,0,False,False,0,,,C:\COSC540\github_mining_starter\data\patches\youtube-dl_2.patch,"""84f085d4bdb66ee025fb337bcd571eab7469da97""","""9d6ac71c27b1dfb662c795ef598dbfd0286682da""","""test/test_InfoExtractor.py""",

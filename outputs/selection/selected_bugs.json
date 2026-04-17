@@ -1,0 +1,62 @@
+[
+  {
+    "project": "pandas",
+    "bug_id": "1",
+    "repo_hint": "\"https://github.com/pandas-dev/pandas\"",
+    "buggy_commit": "\"3fd150c\"",
+    "fixed_commit": "\"e41ee47a90bb1d8a1fa28fcefcd45ed8ef5cb946\"",
+    "python_version": "\"3.8.3\"",
+    "status": "selected",
+    "notes": ""
+  },
+  {
+    "project": "pandas",
+    "bug_id": "2",
+    "repo_hint": "\"https://github.com/pandas-dev/pandas\"",
+    "buggy_commit": "\"2740fb4\"",
+    "fixed_commit": "\"55e8891f6d33be14e0db73ac06513129503f995c\"",
+    "python_version": "\"3.8.3\"",
+    "status": "selected",
+    "notes": ""
+  },
+  {
+    "project": "ansible",
+    "bug_id": "1",
+    "repo_hint": "\"https://github.com/ansible/ansible\"",
+    "buggy_commit": "\"25c5388fdec9e56517a93feb5e8d485680946c25\"",
+    "fixed_commit": "\"343ffaa18b63c92e182b16c3ad84b8d81ca4df69\"",
+    "python_version": "\"3.6.9\"",
+    "status": "selected",
+    "notes": ""
+  },
+  {
+    "project": "ansible",
+    "bug_id": "2",
+    "repo_hint": "\"https://github.com/ansible/ansible\"",
+    "buggy_commit": "\"de59b17c7f69d5cfb72479b71776cc8b97e29a6b\"",
+    "fixed_commit": "\"5b9418c06ca6d51507468124250bb58046886be6\"",
+    "python_version": "\"3.6.9\"",
+    "status": "selected",
+    "notes": ""
+  },
+  {
+    "project": "youtube-dl",
+    "bug_id": "1",
+    "repo_hint": "\"https://github.com/ytdl-org/youtube-dl\"",
+    "buggy_commit": "\"99036a1298089068dcf80c0985bfcc3f8c24f281\"",
+    "fixed_commit": "\"1cc47c667419e0eadc0a6989256ab7b276852adf\"",
+    "python_version": "\"3.7.0\"",
+    "status": "selected",
+    "notes": ""
+  },
+  {
+    "project": "youtube-dl",
+    "bug_id": "2",
+    "repo_hint": "\"https://github.com/ytdl-org/youtube-dl\"",
+    "buggy_commit": "\"84f085d4bdb66ee025fb337bcd571eab7469da97\"",
+    "fixed_commit": "\"9d6ac71c27b1dfb662c795ef598dbfd0286682da\"",
+    "python_version": "\"3.7.0\"",
+    "status": "selected",
+    "notes": ""
+  }
+]

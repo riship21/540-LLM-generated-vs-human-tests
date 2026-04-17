@@ -1,0 +1,22 @@
+{
+  "project": "ansible",
+  "bug_id": "2",
+  "slug": "ansible_2",
+  "status_final": "keep",
+  "recommended_status": "maybe",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_2\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_2\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [],
+  "human_test_files": [],
+  "source_file_paths": [
+    "lib/ansible/utils/version.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"test/units/utils/test_version.py\"",
+  "failing_test_names": [],
+  "buggy_commit": "\"de59b17c7f69d5cfb72479b71776cc8b97e29a6b\"",
+  "fixed_commit": "\"5b9418c06ca6d51507468124250bb58046886be6\"",
+  "context_level": "rich"
+}

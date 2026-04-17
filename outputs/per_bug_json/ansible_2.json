@@ -1,0 +1,151 @@
+{
+  "project": "ansible",
+  "bug_id": "2",
+  "slug": "ansible_2",
+  "bug_info": {
+    "python_version": "\"3.6.9\"",
+    "pythonpath": "\"ansible/build/lib/\"",
+    "buggy_commit_id": "\"de59b17c7f69d5cfb72479b71776cc8b97e29a6b\"",
+    "fixed_commit_id": "\"5b9418c06ca6d51507468124250bb58046886be6\"",
+    "test_file": "\"test/units/utils/test_version.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\ansible_2.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "lib/ansible/utils/version.py",
+      "new_path": "lib/ansible/utils/version.py",
+      "display_path": "lib/ansible/utils/version.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 8,
+      "deleted_lines": 8,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -72,14 +72,14 @@ class _Alpha:",
+          "lines": [
+            " ",
+            "         raise ValueError",
+            " ",
+            "-    def __gt__(self, other):",
+            "-        return not self.__lt__(other)",
+            "-",
+            "     def __le__(self, other):",
+            "         return self.__lt__(other) or self.__eq__(other)",
+            " ",
+            "+    def __gt__(self, other):",
+            "+        return not self.__le__(other)",
+            "+",
+            "     def __ge__(self, other):",
+            "-        return self.__gt__(other) or self.__eq__(other)",
+            "+        return not self.__lt__(other)",
+            " ",
+            " ",
+            " class _Numeric:"
+          ]
+        },
+        {
+          "header": "@@ -115,14 +115,14 @@ class _Numeric:",
+          "lines": [
+            " ",
+            "         raise ValueError",
+            " ",
+            "-    def __gt__(self, other):",
+            "-        return not self.__lt__(other)",
+            "-",
+            "     def __le__(self, other):",
+            "         return self.__lt__(other) or self.__eq__(other)",
+            " ",
+            "+    def __gt__(self, other):",
+            "+        return not self.__le__(other)",
+            "+",
+            "     def __ge__(self, other):",
+            "-        return self.__gt__(other) or self.__eq__(other)",
+            "+        return not self.__lt__(other)",
+            " ",
+            " ",
+            " class SemanticVersion(Version):"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "lib/ansible/utils/version.py",
+      "new_path": "lib/ansible/utils/version.py",
+      "display_path": "lib/ansible/utils/version.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 8,
+      "deleted_lines": 8,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -72,14 +72,14 @@ class _Alpha:",
+          "lines": [
+            " ",
+            "         raise ValueError",
+            " ",
+            "-    def __gt__(self, other):",
+            "-        return not self.__lt__(other)",
+            "-",
+            "     def __le__(self, other):",
+            "         return self.__lt__(other) or self.__eq__(other)",
+            " ",
+            "+    def __gt__(self, other):",
+            "+        return not self.__le__(other)",
+            "+",
+            "     def __ge__(self, other):",
+            "-        return self.__gt__(other) or self.__eq__(other)",
+            "+        return not self.__lt__(other)",
+            " ",
+            " ",
+            " class _Numeric:"
+          ]
+        },
+        {
+          "header": "@@ -115,14 +115,14 @@ class _Numeric:",
+          "lines": [
+            " ",
+            "         raise ValueError",
+            " ",
+            "-    def __gt__(self, other):",
+            "-        return not self.__lt__(other)",
+            "-",
+            "     def __le__(self, other):",
+            "         return self.__lt__(other) or self.__eq__(other)",
+            " ",
+            "+    def __gt__(self, other):",
+            "+        return not self.__le__(other)",
+            "+",
+            "     def __ge__(self, other):",
+            "-        return self.__gt__(other) or self.__eq__(other)",
+            "+        return not self.__lt__(other)",
+            " ",
+            " ",
+            " class SemanticVersion(Version):"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "reproducible": null,
+  "notes": "",
+  "human_tests": [],
+  "human_test_names": [],
+  "human_test_files": [],
+  "human_test_count": 0
+}

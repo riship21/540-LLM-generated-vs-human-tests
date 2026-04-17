@@ -1,0 +1,7 @@
+project,bug_id,repo_hint,buggy_commit,fixed_commit,python_version,status,notes
+pandas,1,"""https://github.com/pandas-dev/pandas""","""3fd150c""","""e41ee47a90bb1d8a1fa28fcefcd45ed8ef5cb946""","""3.8.3""",selected,
+pandas,2,"""https://github.com/pandas-dev/pandas""","""2740fb4""","""55e8891f6d33be14e0db73ac06513129503f995c""","""3.8.3""",selected,
+ansible,1,"""https://github.com/ansible/ansible""","""25c5388fdec9e56517a93feb5e8d485680946c25""","""343ffaa18b63c92e182b16c3ad84b8d81ca4df69""","""3.6.9""",selected,
+ansible,2,"""https://github.com/ansible/ansible""","""de59b17c7f69d5cfb72479b71776cc8b97e29a6b""","""5b9418c06ca6d51507468124250bb58046886be6""","""3.6.9""",selected,
+youtube-dl,1,"""https://github.com/ytdl-org/youtube-dl""","""99036a1298089068dcf80c0985bfcc3f8c24f281""","""1cc47c667419e0eadc0a6989256ab7b276852adf""","""3.7.0""",selected,
+youtube-dl,2,"""https://github.com/ytdl-org/youtube-dl""","""84f085d4bdb66ee025fb337bcd571eab7469da97""","""9d6ac71c27b1dfb662c795ef598dbfd0286682da""","""3.7.0""",selected,

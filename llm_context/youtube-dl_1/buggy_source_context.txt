@@ -1,0 +1,49 @@
+### FILE: youtube_dl/utils.py
+2554:             if m.group('op') not in ('=', '!='):
+2555:                 raise ValueError(
+2556:                     'Operator %s does not support string values!' % m.group('op'))
+2557:             comparison_value = m.group('quotedstrval') or m.group('strval') or m.group('intval')
+2558:             quote = m.group('quote')
+2559:             if quote is not None:
+2560:                 comparison_value = comparison_value.replace(r'\%s' % quote, quote)
+2561:         else:
+2562:             try:
+2563:                 comparison_value = int(m.group('intval'))
+2564:             except ValueError:
+2565:                 comparison_value = parse_filesize(m.group('intval'))
+2566:                 if comparison_value is None:
+2567:                     comparison_value = parse_filesize(m.group('intval') + 'B')
+2568:                 if comparison_value is None:
+2569:                     raise ValueError(
+2570:                         'Invalid integer value %r in filter part %r' % (
+2571:                             m.group('intval'), filter_part))
+2572:         if actual_value is None:
+2573:             return m.group('none_inclusive')
+2574:         return op(actual_value, comparison_value)
+2575: 
+2576:     UNARY_OPERATORS = {
+2577:         '': lambda v: v is not None,
+2578:         '!': lambda v: v is None,
+2579:     }
+2580:     operator_rex = re.compile(r'''(?x)\s*
+2581:         (?P<op>%s)\s*(?P<key>[a-z_]+)
+2582:         \s*$
+2583:         ''' % '|'.join(map(re.escape, UNARY_OPERATORS.keys())))
+2584:     m = operator_rex.search(filter_part)
+2585:     if m:
+2586:         op = UNARY_OPERATORS[m.group('op')]
+2587:         actual_value = dct.get(m.group('key'))
+2588:         return op(actual_value)
+2589: 
+2590:     raise ValueError('Invalid filter part %r' % filter_part)
+2591: 
+2592: 
+2593: def match_str(filter_str, dct):
+2594:     """ Filter a dictionary with a simple string syntax. Returns True (=passes filter) or false """
+2595: 
+2596:     return all(
+2597:         _match_one(filter_part, dct) for filter_part in filter_str.split('&'))
+2598: 
+2599: 
+2600: def match_filter_func(filter_str):
+2601:     def _match_func(info_dict):

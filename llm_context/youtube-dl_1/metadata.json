@@ -1,0 +1,22 @@
+{
+  "project": "youtube-dl",
+  "bug_id": "1",
+  "slug": "youtube-dl_1",
+  "status_final": "keep",
+  "recommended_status": "maybe",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\youtube-dl_1\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\youtube-dl_1\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [],
+  "human_test_files": [],
+  "source_file_paths": [
+    "youtube_dl/utils.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"test/test_utils.py\"",
+  "failing_test_names": [],
+  "buggy_commit": "\"99036a1298089068dcf80c0985bfcc3f8c24f281\"",
+  "fixed_commit": "\"1cc47c667419e0eadc0a6989256ab7b276852adf\"",
+  "context_level": "rich"
+}

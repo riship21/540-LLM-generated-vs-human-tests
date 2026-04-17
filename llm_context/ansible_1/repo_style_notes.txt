@@ -1,0 +1,3 @@
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.
+- Do not modify production code, build scripts, or fixtures unless the repository style clearly requires a local helper.

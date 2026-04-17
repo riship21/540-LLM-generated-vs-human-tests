@@ -1,0 +1,113 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: youtube-dl
+Bug ID: 2
+Slug: youtube-dl_2
+
+Relevant buggy source context:
+### FILE: youtube_dl/extractor/common.py
+1987:                                 representation_ms_info['timescale']) if 'segment_duration' in representation_ms_info else None
+1988:                             for segment_url in representation_ms_info['segment_urls']:
+1989:                                 fragment = {
+1990:                                     location_key(segment_url): segment_url,
+1991:                                 }
+1992:                                 if segment_duration:
+1993:                                     fragment['duration'] = segment_duration
+1994:                                 fragments.append(fragment)
+1995:                             representation_ms_info['fragments'] = fragments
+1996:                         # NB: MPD manifest may contain direct URLs to unfragmented media.
+1997:                         # No fragments key is present in this case.
+1998:                         if 'fragments' in representation_ms_info:
+1999:                             f.update({
+2000:                                 'fragment_base_url': base_url,
+2001:                                 'fragments': [],
+2002:                                 'protocol': 'http_dash_segments',
+2003:                             })
+2004:                             if 'initialization_url' in representation_ms_info:
+2005:                                 initialization_url = representation_ms_info['initialization_url']
+2006:                                 if not f.get('url'):
+2007:                                     f['url'] = initialization_url
+2008:                                 f['fragments'].append({location_key(initialization_url): initialization_url})
+2009:                             f['fragments'].extend(representation_ms_info['fragments'])
+2010:                         try:
+2011:                             existing_format = next(
+2012:                                 fo for fo in formats
+2013:                                 if fo['format_id'] == representation_id)
+2014:                         except StopIteration:
+2015:                             full_info = formats_dict.get(representation_id, {}).copy()
+2016:                             full_info.update(f)
+2017:                             formats.append(full_info)
+2018:                         else:
+2019:                             existing_format.update(f)
+2020:                     else:
+2021:                         self.report_warning('Unknown MIME type %s in DASH manifest' % mime_type)
+2022:         return formats
+2023: 
+2024:     def _extract_ism_formats(self, ism_url, video_id, ism_id=None, note=None, errnote=None, fatal=True):
+2025:         res = self._download_webpage_handle(
+2026:             ism_url, video_id,
+2027:             note=note or 'Downloading ISM manifest',
+2028:             errnote=errnote or 'Failed to download ISM manifest',
+2029:             fatal=fatal)
+2030:         if res is False:
+2031:             return []
+2032:         ism, urlh = res
+2033: 
+2034:         return self._parse_ism_formats(
+2035:             compat_etree_fromstring(ism.encode('utf-8')), urlh.geturl(), ism_id)
+2036: 
+2037:     def _parse_ism_formats(self, ism_doc, ism_url, ism_id=None):
+2038:         """
+2039:         Parse formats from ISM manifest.
+2040:         References:
+2041:          1. [MS-SSTR]: Smooth Streaming Protocol,
+2042:             https://msdn.microsoft.com/en-us/library/ff469518.aspx
+
+Bug-fix patch:
+diff --git a/youtube_dl/extractor/common.py b/youtube_dl/extractor/common.py
+index 3b79b8cb4..35d427eec 100644
+--- a/youtube_dl/extractor/common.py
++++ b/youtube_dl/extractor/common.py
+@@ -2007,16 +2007,14 @@ class InfoExtractor(object):
+                                     f['url'] = initialization_url
+                                 f['fragments'].append({location_key(initialization_url): initialization_url})
+                             f['fragments'].extend(representation_ms_info['fragments'])
+-                        try:
+-                            existing_format = next(
+-                                fo for fo in formats
+-                                if fo['format_id'] == representation_id)
+-                        except StopIteration:
+-                            full_info = formats_dict.get(representation_id, {}).copy()
+-                            full_info.update(f)
+-                            formats.append(full_info)
+-                        else:
+-                            existing_format.update(f)
++                        # According to [1, 5.3.5.2, Table 7, page 35] @id of Representation
++                        # is not necessarily unique within a Period thus formats with
++                        # the same `format_id` are quite possible. There are numerous examples
++                        # of such manifests (see https://github.com/rg3/youtube-dl/issues/15111,
++                        # https://github.com/rg3/youtube-dl/issues/13919)
++                        full_info = formats_dict.get(representation_id, {}).copy()
++                        full_info.update(f)
++                        formats.append(full_info)
+                     else:
+                         self.report_warning('Unknown MIME type %s in DASH manifest' % mime_type)
+         return formats
+
+
+Related human-written test context:
+(no human test context extracted)
+
+Repository test style notes:
+- Follow the existing repository test style visible in the provided examples.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

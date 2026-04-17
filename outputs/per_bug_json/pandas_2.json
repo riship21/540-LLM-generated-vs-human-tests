@@ -1,0 +1,124 @@
+{
+  "project": "pandas",
+  "bug_id": "2",
+  "slug": "pandas_2",
+  "bug_info": {
+    "python_version": "\"3.8.3\"",
+    "buggy_commit_id": "\"2740fb4\"",
+    "fixed_commit_id": "\"55e8891f6d33be14e0db73ac06513129503f995c\"",
+    "test_file": "\"pandas/tests/indexing/test_scalar.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\pandas_2.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "pandas/core/indexing.py",
+      "new_path": "pandas/core/indexing.py",
+      "display_path": "pandas/core/indexing.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 7,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -2016,10 +2016,10 @@ class _ScalarAccessIndexer(_NDFrameIndexerBase):",
+          "lines": [
+            " ",
+            "         if not isinstance(key, tuple):",
+            "             key = _tuplify(self.ndim, key)",
+            "+        key = list(self._convert_key(key, is_setter=True))",
+            "         if len(key) != self.ndim:",
+            "             raise ValueError(\"Not enough indexers for scalar access (setting)!\")",
+            " ",
+            "-        key = list(self._convert_key(key, is_setter=True))",
+            "         self.obj._set_value(*key, value=value, takeable=self._takeable)",
+            " ",
+            " "
+          ]
+        },
+        {
+          "header": "@@ -2032,6 +2032,12 @@ class _AtIndexer(_ScalarAccessIndexer):",
+          "lines": [
+            "         Require they keys to be the same type as the index. (so we don't",
+            "         fallback)",
+            "         \"\"\"",
+            "+        # GH 26989",
+            "+        # For series, unpacking key needs to result in the label.",
+            "+        # This is already the case for len(key) == 1; e.g. (1,)",
+            "+        if self.ndim == 1 and len(key) > 1:",
+            "+            key = (key,)",
+            "+",
+            "         # allow arbitrary setting",
+            "         if is_setter:",
+            "             return list(key)"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "pandas/core/indexing.py",
+      "new_path": "pandas/core/indexing.py",
+      "display_path": "pandas/core/indexing.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 7,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -2016,10 +2016,10 @@ class _ScalarAccessIndexer(_NDFrameIndexerBase):",
+          "lines": [
+            " ",
+            "         if not isinstance(key, tuple):",
+            "             key = _tuplify(self.ndim, key)",
+            "+        key = list(self._convert_key(key, is_setter=True))",
+            "         if len(key) != self.ndim:",
+            "             raise ValueError(\"Not enough indexers for scalar access (setting)!\")",
+            " ",
+            "-        key = list(self._convert_key(key, is_setter=True))",
+            "         self.obj._set_value(*key, value=value, takeable=self._takeable)",
+            " ",
+            " "
+          ]
+        },
+        {
+          "header": "@@ -2032,6 +2032,12 @@ class _AtIndexer(_ScalarAccessIndexer):",
+          "lines": [
+            "         Require they keys to be the same type as the index. (so we don't",
+            "         fallback)",
+            "         \"\"\"",
+            "+        # GH 26989",
+            "+        # For series, unpacking key needs to result in the label.",
+            "+        # This is already the case for len(key) == 1; e.g. (1,)",
+            "+        if self.ndim == 1 and len(key) > 1:",
+            "+            key = (key,)",
+            "+",
+            "         # allow arbitrary setting",
+            "         if is_setter:",
+            "             return list(key)"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "reproducible": null,
+  "notes": "",
+  "human_tests": [],
+  "human_test_names": [],
+  "human_test_files": [],
+  "human_test_count": 0
+}

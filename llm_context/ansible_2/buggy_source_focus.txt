@@ -1,0 +1,170 @@
+### FILE: lib/ansible/utils/version.py
+37:     ''',
+38:     flags=re.X
+39: )
+40: 
+41: 
+42: class _Alpha:
+43:     """Class to easily allow comparing strings
+44: 
+45:     Largely this exists to make comparing an integer and a string on py3
+46:     so that it works like py2.
+47:     """
+48:     def __init__(self, specifier):
+49:         self.specifier = specifier
+50: 
+51:     def __repr__(self):
+52:         return repr(self.specifier)
+53: 
+54:     def __eq__(self, other):
+55:         if isinstance(other, _Alpha):
+56:             return self.specifier == other.specifier
+57:         elif isinstance(other, str):
+58:             return self.specifier == other
+59: 
+60:         return False
+61: 
+62:     def __ne__(self, other):
+63:         return not self.__eq__(other)
+64: 
+65:     def __lt__(self, other):
+66:         if isinstance(other, _Alpha):
+67:             return self.specifier < other.specifier
+68:         elif isinstance(other, str):
+69:             return self.specifier < other
+70:         elif isinstance(other, _Numeric):
+71:             return False
+72: 
+73:         raise ValueError
+74: 
+75:     def __gt__(self, other):
+76:         return not self.__lt__(other)
+77: 
+78:     def __le__(self, other):
+79:         return self.__lt__(other) or self.__eq__(other)
+80: 
+81:     def __ge__(self, other):
+82:         return self.__gt__(other) or self.__eq__(other)
+83: 
+84: 
+85: class _Numeric:
+86:     """Class to easily allow comparing numbers
+87: 
+88:     Largely this exists to make comparing an integer and a string on py3
+89:     so that it works like py2.
+90:     """
+91:     def __init__(self, specifier):
+92:         self.specifier = int(specifier)
+93: 
+94:     def __repr__(self):
+95:         return repr(self.specifier)
+96: 
+97:     def __eq__(self, other):
+98:         if isinstance(other, _Numeric):
+99:             return self.specifier == other.specifier
+100:         elif isinstance(other, int):
+101:             return self.specifier == other
+102: 
+103:         return False
+104: 
+105:     def __ne__(self, other):
+106:         return not self.__eq__(other)
+107: 
+108:     def __lt__(self, other):
+109:         if isinstance(other, _Numeric):
+110:             return self.specifier < other.specifier
+111:         elif isinstance(other, int):
+112:             return self.specifier < other
+113:         elif isinstance(other, _Alpha):
+114:             return True
+115: 
+116:         raise ValueError
+117: 
+118:     def __gt__(self, other):
+119:         return not self.__lt__(other)
+120: 
+
+80: 
+81:     def __ge__(self, other):
+82:         return self.__gt__(other) or self.__eq__(other)
+83: 
+84: 
+85: class _Numeric:
+86:     """Class to easily allow comparing numbers
+87: 
+88:     Largely this exists to make comparing an integer and a string on py3
+89:     so that it works like py2.
+90:     """
+91:     def __init__(self, specifier):
+92:         self.specifier = int(specifier)
+93: 
+94:     def __repr__(self):
+95:         return repr(self.specifier)
+96: 
+97:     def __eq__(self, other):
+98:         if isinstance(other, _Numeric):
+99:             return self.specifier == other.specifier
+100:         elif isinstance(other, int):
+101:             return self.specifier == other
+102: 
+103:         return False
+104: 
+105:     def __ne__(self, other):
+106:         return not self.__eq__(other)
+107: 
+108:     def __lt__(self, other):
+109:         if isinstance(other, _Numeric):
+110:             return self.specifier < other.specifier
+111:         elif isinstance(other, int):
+112:             return self.specifier < other
+113:         elif isinstance(other, _Alpha):
+114:             return True
+115: 
+116:         raise ValueError
+117: 
+118:     def __gt__(self, other):
+119:         return not self.__lt__(other)
+120: 
+121:     def __le__(self, other):
+122:         return self.__lt__(other) or self.__eq__(other)
+123: 
+124:     def __ge__(self, other):
+125:         return self.__gt__(other) or self.__eq__(other)
+126: 
+127: 
+128: class SemanticVersion(Version):
+129:     """Version comparison class that implements Semantic Versioning 2.0.0
+130: 
+131:     Based off of ``distutils.version.Version``
+132:     """
+133: 
+134:     version_re = SEMVER_RE
+135: 
+136:     def __init__(self, vstring=None):
+137:         self.vstring = vstring
+138:         self.major = None
+139:         self.minor = None
+140:         self.patch = None
+141:         self.prerelease = ()
+142:         self.buildmetadata = ()
+143: 
+144:         if vstring:
+145:             self.parse(vstring)
+146: 
+147:     def __repr__(self):
+148:         return 'SemanticVersion(%r)' % self.vstring
+149: 
+150:     @staticmethod
+151:     def from_loose_version(loose_version):
+152:         """This method is designed to take a ``LooseVersion``
+153:         and attempt to construct a ``SemanticVersion`` from it
+154: 
+155:         This is useful where you want to do simple version math
+156:         without requiring users to provide a compliant semver.
+157:         """
+158:         if not isinstance(loose_version, LooseVersion):
+159:             raise ValueError("%r is not a LooseVersion" % loose_version)
+160: 
+161:         try:
+162:             version = loose_version.version[:]
+163:         except AttributeError:
