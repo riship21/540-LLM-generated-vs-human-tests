@@ -1,0 +1,49 @@
+### FILE: youtube_dl/utils.py
+1540: 
+1541: def strip_jsonp(code):
+1542:     return re.sub(
+1543:         r'(?s)^[a-zA-Z0-9_]+\s*\(\s*(.*)\);?\s*?(?://[^\n]*)*$', r'\1', code)
+1544: 
+1545: 
+1546: def js_to_json(code):
+1547:     def fix_kv(m):
+1548:         v = m.group(0)
+1549:         if v in ('true', 'false', 'null'):
+1550:             return v
+1551:         if v.startswith('"'):
+1552:             return v
+1553:         if v.startswith("'"):
+1554:             v = v[1:-1]
+1555:             v = re.sub(r"\\\\|\\'|\"", lambda m: {
+1556:                 '\\\\': '\\\\',
+1557:                 "\\'": "'",
+1558:                 '"': '\\"',
+1559:             }[m.group(0)], v)
+1560:         return '"%s"' % v
+1561: 
+1562:     res = re.sub(r'''(?x)
+1563:         "(?:[^"\\]*(?:\\\\|\\")?)*"|
+1564:         '(?:[^'\\]*(?:\\\\|\\')?)*'|
+1565:         [a-zA-Z_][.a-zA-Z_0-9]*
+1566:         ''', fix_kv, code)
+1567:     res = re.sub(r',(\s*\])', lambda m: m.group(1), res)
+1568:     return res
+1569: 
+1570: 
+1571: def qualities(quality_ids):
+1572:     """ Get a numeric quality value out of a list of possible values """
+1573:     def q(qid):
+1574:         try:
+1575:             return quality_ids.index(qid)
+1576:         except ValueError:
+1577:             return -1
+1578:     return q
+1579: 
+1580: 
+1581: DEFAULT_OUTTMPL = '%(title)s-%(id)s.%(ext)s'
+1582: 
+1583: 
+1584: def limit_length(s, length):
+1585:     """ Add ellipses to overly long strings """
+1586:     if s is None:
+1587:         return None

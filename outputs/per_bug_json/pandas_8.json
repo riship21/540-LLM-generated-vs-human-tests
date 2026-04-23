@@ -1,0 +1,127 @@
+{
+  "project": "pandas",
+  "bug_id": "8",
+  "slug": "pandas_8",
+  "bug_info": {
+    "python_version": "\"3.8.3\"",
+    "buggy_commit_id": "\"ddbeca6\"",
+    "fixed_commit_id": "\"d09f20e29bdfa82f5efc071986e2633001d552f6\"",
+    "test_file": "\"pandas/tests/frame/methods/test_replace.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\pandas_8.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "pandas/core/internals/blocks.py",
+      "new_path": "pandas/core/internals/blocks.py",
+      "display_path": "pandas/core/internals/blocks.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 0,
+      "deleted_lines": 5,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -728,11 +728,6 @@ class Block(PandasObject):",
+          "lines": [
+            " ",
+            "         mask = missing.mask_missing(values, to_replace)",
+            " ",
+            "-        if not mask.any():",
+            "-            if inplace:",
+            "-                return [self]",
+            "-            return [self.copy()]",
+            "-",
+            "         try:",
+            "             blocks = self.putmask(mask, value, inplace=inplace)",
+            "             # Note: it is _not_ the case that self._can_hold_element(value)"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "pandas/core/internals/blocks.py",
+      "new_path": "pandas/core/internals/blocks.py",
+      "display_path": "pandas/core/internals/blocks.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 0,
+      "deleted_lines": 5,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -728,11 +728,6 @@ class Block(PandasObject):",
+          "lines": [
+            " ",
+            "         mask = missing.mask_missing(values, to_replace)",
+            " ",
+            "-        if not mask.any():",
+            "-            if inplace:",
+            "-                return [self]",
+            "-            return [self.copy()]",
+            "-",
+            "         try:",
+            "             blocks = self.putmask(mask, value, inplace=inplace)",
+            "             # Note: it is _not_ the case that self._can_hold_element(value)"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "pandas/tests/frame/methods/test_replace.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_replace"
+      ],
+      "matched_test_names": [
+        "test_replace"
+      ],
+      "matched_qualnames": [
+        "TestDataFrameReplace.test_replace"
+      ],
+      "extracted_functions": [
+        {
+          "name": "test_replace",
+          "qualname": "TestDataFrameReplace.test_replace",
+          "class_name": "TestDataFrameReplace",
+          "start_line": 585,
+          "end_line": 610,
+          "body": "    def test_replace(self, datetime_frame):\n        datetime_frame[\"A\"][:5] = np.nan\n        datetime_frame[\"A\"][-5:] = np.nan\n\n        zero_filled = datetime_frame.replace(np.nan, -1e8)\n        tm.assert_frame_equal(zero_filled, datetime_frame.fillna(-1e8))\n        tm.assert_frame_equal(zero_filled.replace(-1e8, np.nan), datetime_frame)\n\n        datetime_frame[\"A\"][:5] = np.nan\n        datetime_frame[\"A\"][-5:] = np.nan\n        datetime_frame[\"B\"][:5] = -1e8\n\n        # empty\n        df = DataFrame(index=[\"a\", \"b\"])\n        tm.assert_frame_equal(df, df.replace(5, 7))\n\n        # GH 11698\n        # test for mixed data types.\n        df = pd.DataFrame(\n            [(\"-\", pd.to_datetime(\"20150101\")), (\"a\", pd.to_datetime(\"20150102\"))]\n        )\n        df1 = df.replace(\"-\", np.nan)\n        expected_df = pd.DataFrame(\n            [(np.nan, pd.to_datetime(\"20150101\")), (\"a\", pd.to_datetime(\"20150102\"))]\n        )\n        tm.assert_frame_equal(df1, expected_df)"
+        }
+      ],
+      "file_preview": "from datetime import datetime\nfrom io import StringIO\nimport re\nfrom typing import Dict, List, Union\n\nimport numpy as np\nimport pytest\n\nimport pandas as pd\nfrom pandas import DataFrame, Index, Series, Timestamp, date_range\nimport pandas._testing as tm\n\n\n@pytest.fixture\ndef mix_ab() -> Dict[str, List[Union[int, str]]]:\n    return {\"a\": list(range(4)), \"b\": list(\"ab..\")}\n\n\n@pytest.fixture\ndef mix_abc() -> Dict[str, List[Union[float, str]]]:\n    return {\"a\": list(range(4)), \"b\": list(\"ab..\"), \"c\": [\"a\", \"b\", np.nan, \"d\"]}\n\n\nclass TestDataFrameReplace:\n    def test_replace_inplace(self, datetime_frame, float_string_frame):\n        datetime_frame[\"A\"][:5] = np.nan\n        datetime_frame[\"A\"][-5:] = np.nan\n\n        tsframe = datetime_frame.copy()\n        tsframe.replace(np.nan, 0, inplace=True)\n        tm.assert_frame_equal(tsframe, datetime_frame.fillna(0))\n\n        # mixed type\n        mf = float_string_frame\n        mf.iloc[5:20, mf.columns.get_loc(\"foo\")] = np.nan\n        mf.iloc[-10:, mf.columns.get_loc(\"A\")] = np.nan\n\n        result = float_string_frame.replace(np.nan, 0)\n        expected = float_string_frame.fillna(value=0)\n        tm.assert_frame_equal(result, expected)\n\n        tsframe = datetime_frame.copy()\n        tsframe.replace([np.nan], [0], inplace=True)\n        tm.assert_frame_equal(tsframe, datetime_frame.fillna(0))\n\n    def test_regex_replace_scalar(self, mix_ab):\n        obj = {\"a\": list(\"ab..\"), \"b\": list(\"efgh\")}\n        dfobj = DataFrame(obj)\n        dfmix = DataFrame(mix_ab)\n\n        # simplest cases\n        # regex -> value\n        # obj frame\n        res = dfobj.replace(r\"\\s*\\.\\s*\", np.nan, regex=True)\n        tm.assert_frame_equal(dfobj, res.fillna(\".\"))\n\n        # mixed\n        res = dfmix.replace(r\"\\s*\\.\\s*\", np.nan, regex=True)\n        tm.assert_frame_equal(dfmix, res.fillna(\".\"))\n\n        # regex -> regex\n        # obj frame\n        res = dfobj.replace(r\"\\s*(\\.)\\s*\", r\"\\1\\1\\1\", regex=True)\n        objc = obj.copy()\n        objc[\"a\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(objc)\n        tm.assert_frame_equal(res, expec)\n\n        # with mixed\n        res = dfmix.replace(r\"\\s*(\\.)\\s*\", r\"\\1\\1\\1\", regex=True)\n        mixc = mix_ab.copy()\n        mixc[\"b\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(mixc)\n        tm.assert_frame_equal(res, expec)\n\n        # everything with compiled regexs as well\n        res = dfobj.replace(re.compile(r\"\\s*\\.\\s*\"), np.nan, regex=True)\n        tm.assert_frame_equal(dfobj, res.fillna(\".\"))\n\n        # mixed\n        res = dfmix.replace(re.compile(r\"\\s*\\.\\s*\"), np.nan, regex=True)\n        tm.assert_frame_equal(dfmix, res.fillna(\".\"))\n\n        # regex -> regex\n        # obj frame\n        res = dfobj.replace(re.compile(r\"\\s*(\\.)\\s*\"), r\"\\1\\1\\1\")\n        objc = obj.copy()\n        objc[\"a\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(objc)\n        tm.assert_frame_equal(res, expec)\n\n        # with mixed\n        res = dfmix.replace(re.compile(r\"\\s*(\\.)\\s*\"), r\"\\1\\1\\1\")\n        mixc = mix_ab.copy()\n        mixc[\"b\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(mixc)\n        tm.assert_frame_equal(res, expec)\n\n        res = dfmix.replace(regex=re.compile(r\"\\s*(\\.)\\s*\"), value=r\"\\1\\1\\1\")\n        mixc = mix_ab.copy()\n        mixc[\"b\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(mixc)\n        tm.assert_frame_equal(res, expec)\n\n        res = dfmix.replace(regex=r\"\\s*(\\.)\\s*\", value=r\"\\1\\1\\1\")\n        mixc = mix_ab.copy()\n        mixc[\"b\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(mixc)\n        tm.assert_frame_equal(res, expec)\n\n    def test_regex_replace_scalar_inplace(self, mix_ab):\n        obj = {\"a\": list(\"ab..\"), \"b\": list(\"efgh\")}\n        dfobj = DataFrame(obj)\n        dfmix = DataFrame(mix_ab)\n\n        # simplest cases\n        # regex -> value\n        # obj frame\n        res = dfobj.copy()\n        res.replace(r\"\\s*\\.\\s*\", np.nan, regex=True, inplace=True)\n        tm.assert_frame_equal(dfobj, res.fillna(\".\"))\n\n        # mixed\n        res = dfmix.copy()\n        res.replace(r\"\\s*\\.\\s*\", np.nan, regex=True, inplace=True)\n        tm.assert_frame_equal(dfmix, res.fillna(\".\"))\n\n        # regex -> regex\n        # obj frame\n        res = dfobj.copy()\n        res.replace(r\"\\s*(\\.)\\s*\", r\"\\1\\1\\1\", regex=True, inplace=True)\n        objc = obj.copy()\n        objc[\"a\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(objc)\n        tm.assert_frame_equal(res, expec)\n\n        # with mixed\n        res = dfmix.copy()\n        res.replace(r\"\\s*(\\.)\\s*\", r\"\\1\\1\\1\", regex=True, inplace=True)\n        mixc = mix_ab.copy()\n        mixc[\"b\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(mixc)\n        tm.assert_frame_equal(res, expec)\n\n        # everything with compiled regexs as well\n        res = dfobj.copy()\n        res.replace(re.compile(r\"\\s*\\.\\s*\"), np.nan, regex=True, inplace=True)\n        tm.assert_frame_equal(dfobj, res.fillna(\".\"))\n\n        # mixed\n        res = dfmix.copy()\n        res.replace(re.compile(r\"\\s*\\.\\s*\"), np.nan, regex=True, inplace=True)\n        tm.assert_frame_equal(dfmix, res.fillna(\".\"))\n\n        # regex -> regex\n        # obj frame\n        res = dfobj.copy()\n        res.replace(re.compile(r\"\\s*(\\.)\\s*\"), r\"\\1\\1\\1\", regex=True, inplace=True)\n        objc = obj.copy()\n        objc[\"a\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(objc)\n        tm.assert_frame_equal(res, expec)\n\n        # with mixed\n        res = dfmix.copy()\n        res.replace(re.compile(r\"\\s*(\\.)\\s*\"), r\"\\1\\1\\1\", regex=True, inplace=True)\n        mixc = mix_ab.copy()\n        mixc[\"b\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(mixc)\n        tm.assert_frame_equal(res, expec)\n\n        res = dfobj.copy()\n        res.replace(regex=r\"\\s*\\.\\s*\", value=np.nan, inplace=True)\n        tm.assert_frame_equal(dfobj, res.fillna(\".\"))\n\n        # mixed\n        res = dfmix.copy()\n        res.replace(regex=r\"\\s*\\.\\s*\", value=np.nan, inplace=True)\n        tm.assert_frame_equal(dfmix, res.fillna(\".\"))\n\n        # regex -> regex\n        # obj frame\n        res = dfobj.copy()\n        res.replace(regex=r\"\\s*(\\.)\\s*\", value=r\"\\1\\1\\1\", inplace=True)\n        objc = obj.copy()\n        objc[\"a\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(objc)\n        tm.assert_frame_equal(res, expec)\n\n        # with mixed\n        res = dfmix.copy()\n        res.replace(regex=r\"\\s*(\\.)\\s*\", value=r\"\\1\\1\\1\", inplace=True)\n        mixc = mix_ab.copy()\n        mixc[\"b\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(mixc)\n        tm.assert_frame_equal(res, expec)\n\n        # everything with compiled regexs as well\n        res = dfobj.copy()\n        res.replace(regex=re.compile(r\"\\s*\\.\\s*\"), value=np.nan, inplace=True)\n        tm.assert_frame_equal(dfobj, res.fillna(\".\"))\n\n        # mixed\n        res = dfmix.copy()\n        res.replace(regex=re.compile(r\"\\s*\\.\\s*\"), value=np.nan, inplace=True)\n        tm.assert_frame_equal(dfmix, res.fillna(\".\"))\n\n        # regex -> regex\n        # obj frame\n        res = dfobj.copy()\n        res.replace(regex=re.compile(r\"\\s*(\\.)\\s*\"), value=r\"\\1\\1\\1\", inplace=True)\n        objc = obj.copy()\n        objc[\"a\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(objc)\n        tm.assert_frame_equal(res, expec)\n\n        # with mixed\n        res = dfmix.copy()\n        res.replace(regex=re.compile(r\"\\s*(\\.)\\s*\"), value=r\"\\1\\1\\1\", inplace=True)\n        mixc = mix_ab.copy()\n        mixc[\"b\"] = [\"a\", \"b\", \"...\", \"...\"]\n        expec = DataFrame(mixc)\n        tm.assert_frame_equal(res, expec)\n\n    def test_regex_replace_list_obj(self):\n        obj = {\"a\": list(\"ab..\"), \"b\": list(\"efgh\"), \"c\": list(\"helo\")}\n        dfobj = DataFrame(obj)\n\n        # lists of regexes and values\n        # list of [re1, re2, ..., reN] -> [v1, v2, ..., vN]\n        to_replace_res = [r\"\\s*\\.\\s*\", r\"e|f|g\"]\n        values = [np.nan, \"crap\"]\n        res = dfobj.replace(to_replace_res, values, regex=True)\n        expec = DataFrame(\n            {\n                \"a\": [\"a\", \"b\", np.nan, np.nan],\n                \"b\": [\"crap\"] * 3 + [\"h\"],\n                \"c\": [\"h\", \"crap\", \"l\", \"o\"],\n            }\n        )\n        tm.assert_frame_equal(res, expec)\n\n        # list of [re1, re2, ..., reN] -> [re1, re2, .., reN]\n        to_replace_res = [r\"\\s*(\\.)\\s*\", r\"(e|f|g)\"]\n        values = [r\"\\1\\1\", r\"\\1_crap\"]\n        res = dfobj.replace(to_replace_res, values, regex=True)\n        expec = DataFrame(\n            {\n                \"a\": [\"a\", \"b\", \"..\", \"..\"],\n                \"b\": [\"e_crap\", \"f_crap\", \"g_crap\", \"h\"],\n                \"c\": [\"h\", \"e_crap\", \"l\", \"o\"],\n            }\n        )\n        tm.assert_frame_equal(res, expec)\n\n        # list of [re1, re2, ..., reN] -> [(re1 or v1), (re2 or v2), ..., (reN\n        # or vN)]\n        to_replace_res = [r\"\\s*(\\.)\\s*\", r\"e\"]\n        values = [r\"\\1\\1\", r\"crap\"]\n        res = dfobj.replace(to_replace_res, values, regex=True)",
+      "raw_failing_test_reference": "\"pandas/tests/frame/methods/test_replace.py\""
+    }
+  ],
+  "human_test_names": [
+    "test_replace"
+  ],
+  "human_test_files": [
+    "pandas/tests/frame/methods/test_replace.py"
+  ],
+  "human_test_count": 1,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

@@ -2,21 +2,21 @@
   "project": "pandas",
   "bug_id": "2",
   "slug": "pandas_2",
-  "status_final": "keep",
+  "status_final": "maybe",
   "recommended_status": "maybe",
   "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_2\\buggy",
   "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_2\\fixed",
   "source_files_changed": 1,
   "test_files_changed": 0,
   "human_test_names": [],
-  "human_test_files": [],
+  "human_test_files": [
+    "pandas/tests/indexing/test_scalar.py"
+  ],
   "source_file_paths": [
     "pandas/core/indexing.py"
   ],
   "test_file_paths": [],
   "failing_tests": "\"pandas/tests/indexing/test_scalar.py\"",
-  "failing_test_names": [],
   "buggy_commit": "\"2740fb4\"",
-  "fixed_commit": "\"55e8891f6d33be14e0db73ac06513129503f995c\"",
-  "context_level": "rich"
+  "fixed_commit": "\"55e8891f6d33be14e0db73ac06513129503f995c\""
 }

@@ -1,0 +1,99 @@
+### FILE: youtube_dl/utils.py
+1956: 
+1957:     raise ValueError('Invalid filter part %r' % filter_part)
+1958: 
+1959: 
+1960: def match_str(filter_str, dct):
+1961:     """ Filter a dictionary with a simple string syntax. Returns True (=passes filter) or false """
+1962: 
+1963:     return all(
+1964:         _match_one(filter_part, dct) for filter_part in filter_str.split('&'))
+1965: 
+1966: 
+1967: def match_filter_func(filter_str):
+1968:     def _match_func(info_dict):
+1969:         if match_str(filter_str, info_dict):
+1970:             return None
+1971:         else:
+1972:             video_title = info_dict.get('title', info_dict.get('id', 'video'))
+1973:             return '%s does not pass filter %s, skipping ..' % (video_title, filter_str)
+1974:     return _match_func
+1975: 
+1976: 
+1977: def parse_dfxp_time_expr(time_expr):
+1978:     if not time_expr:
+1979:         return 0.0
+1980: 
+1981:     mobj = re.match(r'^(?P<time_offset>\d+(?:\.\d+)?)s?$', time_expr)
+1982:     if mobj:
+1983:         return float(mobj.group('time_offset'))
+1984: 
+1985:     mobj = re.match(r'^(\d+):(\d\d):(\d\d(?:\.\d+)?)$', time_expr)
+1986:     if mobj:
+1987:         return 3600 * int(mobj.group(1)) + 60 * int(mobj.group(2)) + float(mobj.group(3))
+1988: 
+1989: 
+1990: def srt_subtitles_timecode(seconds):
+1991:     return '%02d:%02d:%02d,%03d' % (seconds / 3600, (seconds % 3600) / 60, seconds % 60, (seconds % 1) * 1000)
+1992: 
+1993: 
+1994: def dfxp2srt(dfxp_data):
+1995:     _x = functools.partial(xpath_with_ns, ns_map={
+1996:         'ttml': 'http://www.w3.org/ns/ttml',
+1997:         'ttaf1': 'http://www.w3.org/2006/10/ttaf1',
+1998:     })
+1999: 
+2000:     def parse_node(node):
+2001:         str_or_empty = functools.partial(str_or_none, default='')
+2002: 
+
+2000:     def parse_node(node):
+2001:         str_or_empty = functools.partial(str_or_none, default='')
+2002: 
+2003:         out = str_or_empty(node.text)
+2004: 
+2005:         for child in node:
+2006:             if child.tag in (_x('ttml:br'), _x('ttaf1:br'), 'br'):
+2007:                 out += '\n' + str_or_empty(child.tail)
+2008:             elif child.tag in (_x('ttml:span'), _x('ttaf1:span'), 'span'):
+2009:                 out += str_or_empty(parse_node(child))
+2010:             else:
+2011:                 out += str_or_empty(xml.etree.ElementTree.tostring(child))
+2012: 
+2013:         return out
+2014: 
+2015:     dfxp = compat_etree_fromstring(dfxp_data.encode('utf-8'))
+2016:     out = []
+2017:     paras = dfxp.findall(_x('.//ttml:p')) or dfxp.findall(_x('.//ttaf1:p')) or dfxp.findall('.//p')
+2018: 
+2019:     if not paras:
+2020:         raise ValueError('Invalid dfxp/TTML subtitle')
+2021: 
+2022:     for para, index in zip(paras, itertools.count(1)):
+2023:         begin_time = parse_dfxp_time_expr(para.attrib['begin'])
+2024:         end_time = parse_dfxp_time_expr(para.attrib.get('end'))
+2025:         if not end_time:
+2026:             end_time = begin_time + parse_dfxp_time_expr(para.attrib['dur'])
+2027:         out.append('%d\n%s --> %s\n%s\n\n' % (
+2028:             index,
+2029:             srt_subtitles_timecode(begin_time),
+2030:             srt_subtitles_timecode(end_time),
+2031:             parse_node(para)))
+2032: 
+2033:     return ''.join(out)
+2034: 
+2035: 
+2036: def cli_option(params, command_option, param):
+2037:     param = params.get(param)
+2038:     return [command_option, param] if param is not None else []
+2039: 
+2040: 
+2041: def cli_bool_option(params, command_option, param, true_value='true', false_value='false', separator=None):
+2042:     param = params.get(param)
+2043:     assert isinstance(param, bool)
+2044:     if separator:
+2045:         return [command_option + separator + (true_value if param else false_value)]
+2046:     return [command_option, true_value if param else false_value]
+2047: 
+2048: 
+2049: def cli_valueless_option(params, command_option, param, expected_value=True):

@@ -1,0 +1,229 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: pandas
+Bug ID: 3
+Slug: pandas_3
+
+Relevant buggy source context:
+### FILE: pandas/core/series.py
+4664: 
+4665:     def to_timestamp(self, freq=None, how="start", copy=True) -> "Series":
+4666:         """
+4667:         Cast to DatetimeIndex of Timestamps, at *beginning* of period.
+4668: 
+4669:         Parameters
+4670:         ----------
+4671:         freq : str, default frequency of PeriodIndex
+4672:             Desired frequency.
+4673:         how : {'s', 'e', 'start', 'end'}
+4674:             Convention for converting period to timestamp; start of period
+4675:             vs. end.
+4676:         copy : bool, default True
+4677:             Whether or not to return a copy.
+4678: 
+4679:         Returns
+4680:         -------
+4681:         Series with DatetimeIndex
+4682:         """
+4683:         new_values = self._values
+4684:         if copy:
+4685:             new_values = new_values.copy()
+4686: 
+4687:         assert isinstance(self.index, PeriodIndex)
+4688:         new_index = self.index.to_timestamp(freq=freq, how=how)  # type: ignore
+4689:         return self._constructor(new_values, index=new_index).__finalize__(
+4690:             self, method="to_timestamp"
+4691:         )
+4692: 
+4693:     def to_period(self, freq=None, copy=True) -> "Series":
+4694:         """
+4695:         Convert Series from DatetimeIndex to PeriodIndex with desired
+4696:         frequency (inferred from index if not passed).
+4697: 
+4698:         Parameters
+4699:         ----------
+4700:         freq : str, default None
+4701:             Frequency associated with the PeriodIndex.
+4702:         copy : bool, default True
+4703:             Whether or not to return a copy.
+4704: 
+4705:         Returns
+4706:         -------
+4707:         Series
+4708:             Series with index converted to PeriodIndex.
+4709:         """
+4710:         new_values = self._values
+
+4691:         )
+4692: 
+4693:     def to_period(self, freq=None, copy=True) -> "Series":
+4694:         """
+4695:         Convert Series from DatetimeIndex to PeriodIndex with desired
+4696:         frequency (inferred from index if not passed).
+4697: 
+4698:         Parameters
+4699:         ----------
+4700:         freq : str, default None
+4701:             Frequency associated with the PeriodIndex.
+4702:         copy : bool, default True
+4703:             Whether or not to return a copy.
+4704: 
+4705:         Returns
+4706:         -------
+4707:         Series
+4708:             Series with index converted to PeriodIndex.
+4709:         """
+4710:         new_values = self._values
+4711:         if copy:
+4712:             new_values = new_values.copy()
+4713: 
+4714:         assert isinstance(self.index, DatetimeIndex)
+4715:         new_index = self.index.to_period(freq=freq)  # type: ignore
+4716:         return self._constructor(new_values, index=new_index).__finalize__(
+4717:             self, method="to_period"
+4718:         )
+4719: 
+4720:     # ----------------------------------------------------------------------
+4721:     # Add index
+4722:     _AXIS_ORDERS = ["index"]
+4723:     _AXIS_REVERSED = False
+4724:     _AXIS_LEN = len(_AXIS_ORDERS)
+4725:     _info_axis_number = 0
+4726:     _info_axis_name = "index"
+4727: 
+4728:     index: "Index" = properties.AxisProperty(
+4729:         axis=0, doc="The index (axis labels) of the Series."
+4730:     )
+4731: 
+4732:     # ----------------------------------------------------------------------
+4733:     # Accessor Methods
+4734:     # ----------------------------------------------------------------------
+4735:     str = CachedAccessor("str", StringMethods)
+4736:     dt = CachedAccessor("dt", CombinedDatetimelikeProperties)
+4737:     cat = CachedAccessor("cat", CategoricalAccessor)
+
+Bug-fix patch:
+diff --git a/pandas/core/series.py b/pandas/core/series.py
+index 4ba9a0c92..e107b66d3 100644
+--- a/pandas/core/series.py
++++ b/pandas/core/series.py
+@@ -4684,7 +4684,8 @@ Name: Max Speed, dtype: float64
+         if copy:
+             new_values = new_values.copy()
+ 
+-        assert isinstance(self.index, PeriodIndex)
++        if not isinstance(self.index, PeriodIndex):
++            raise TypeError(f"unsupported Type {type(self.index).__name__}")
+         new_index = self.index.to_timestamp(freq=freq, how=how)  # type: ignore
+         return self._constructor(new_values, index=new_index).__finalize__(
+             self, method="to_timestamp"
+@@ -4711,7 +4712,8 @@ Name: Max Speed, dtype: float64
+         if copy:
+             new_values = new_values.copy()
+ 
+-        assert isinstance(self.index, DatetimeIndex)
++        if not isinstance(self.index, DatetimeIndex):
++            raise TypeError(f"unsupported Type {type(self.index).__name__}")
+         new_index = self.index.to_period(freq=freq)  # type: ignore
+         return self._constructor(new_values, index=new_index).__finalize__(
+             self, method="to_period"
+
+
+Related human-written test context:
+### TEST: TestToPeriod.test_to_period (pandas/tests/series/methods/test_to_period.py)
+    def test_to_period(self):
+        rng = date_range("1/1/2000", "1/1/2001", freq="D")
+        ts = Series(np.random.randn(len(rng)), index=rng)
+
+        pts = ts.to_period()
+        exp = ts.copy()
+        exp.index = period_range("1/1/2000", "1/1/2001")
+        tm.assert_series_equal(pts, exp)
+
+        pts = ts.to_period("M")
+        exp.index = exp.index.asfreq("M")
+        tm.assert_index_equal(pts.index, exp.index.asfreq("M"))
+        tm.assert_series_equal(pts, exp)
+
+        # GH#7606 without freq
+        idx = DatetimeIndex(["2011-01-01", "2011-01-02", "2011-01-03", "2011-01-04"])
+        exp_idx = PeriodIndex(
+            ["2011-01-01", "2011-01-02", "2011-01-03", "2011-01-04"], freq="D"
+        )
+
+        s = Series(np.random.randn(4), index=idx)
+        expected = s.copy()
+        expected.index = exp_idx
+        tm.assert_series_equal(s.to_period(), expected)
+
+        df = DataFrame(np.random.randn(4, 4), index=idx, columns=idx)
+        expected = df.copy()
+        expected.index = exp_idx
+        tm.assert_frame_equal(df.to_period(), expected)
+
+        expected = df.copy()
+        expected.columns = exp_idx
+        tm.assert_frame_equal(df.to_period(axis=1), expected)
+
+### TEST: TestToTimestamp.test_to_timestamp (pandas/tests/series/methods/test_to_timestamp.py)
+    def test_to_timestamp(self):
+        index = period_range(freq="A", start="1/1/2001", end="12/1/2009")
+        series = Series(1, index=index, name="foo")
+
+        exp_index = date_range("1/1/2001", end="12/31/2009", freq="A-DEC")
+        result = series.to_timestamp(how="end")
+        exp_index = exp_index + Timedelta(1, "D") - Timedelta(1, "ns")
+        tm.assert_index_equal(result.index, exp_index)
+        assert result.name == "foo"
+
+        exp_index = date_range("1/1/2001", end="1/1/2009", freq="AS-JAN")
+        result = series.to_timestamp(how="start")
+        tm.assert_index_equal(result.index, exp_index)
+
+        def _get_with_delta(delta, freq="A-DEC"):
+            return date_range(
+                to_datetime("1/1/2001") + delta,
+                to_datetime("12/31/2009") + delta,
+                freq=freq,
+            )
+
+        delta = timedelta(hours=23)
+        result = series.to_timestamp("H", "end")
+        exp_index = _get_with_delta(delta)
+        exp_index = exp_index + Timedelta(1, "h") - Timedelta(1, "ns")
+        tm.assert_index_equal(result.index, exp_index)
+
+        delta = timedelta(hours=23, minutes=59)
+        result = series.to_timestamp("T", "end")
+        exp_index = _get_with_delta(delta)
+        exp_index = exp_index + Timedelta(1, "m") - Timedelta(1, "ns")
+        tm.assert_index_equal(result.index, exp_index)
+
+        result = series.to_timestamp("S", "end")
+        delta = timedelta(hours=23, minutes=59, seconds=59)
+        exp_index = _get_with_delta(delta)
+        exp_index = exp_index + Timedelta(1, "s") - Timedelta(1, "ns")
+        tm.assert_index_equal(result.index, exp_index)
+
+        index = period_range(freq="H", start="1/1/2001", end="1/2/2001")
+        series = Series(1, index=index, name="foo")
+
+        exp_index = date_range("1/1/2001 00:59:59", end="1/2/2001 00:59:59", freq="H")
+        result = series.to_timestamp(how="end")
+        exp_index = exp_index + Timedelta(1, "s") - Timedelta(1, "ns")
+        tm.assert_index_equal(result.index, exp_index)
+        assert result.name == "foo"
+
+Repository test style notes:
+- Repository appears to use pytest-style test organization.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

@@ -1,0 +1,105 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: pandas
+Bug ID: 10
+Slug: pandas_10
+
+Relevant buggy source context:
+### FILE: pandas/core/internals/blocks.py
+1579: 
+1580:     def should_store(self, value: ArrayLike) -> bool:
+1581:         """
+1582:         Can we set the given array-like value inplace?
+1583:         """
+1584:         return isinstance(value, self._holder)
+1585: 
+1586:     def set(self, locs, values):
+1587:         assert locs.tolist() == [0]
+1588:         self.values[:] = values
+1589: 
+1590:     def putmask(
+1591:         self, mask, new, inplace: bool = False, axis: int = 0, transpose: bool = False,
+1592:     ) -> List["Block"]:
+1593:         """
+1594:         See Block.putmask.__doc__
+1595:         """
+1596:         inplace = validate_bool_kwarg(inplace, "inplace")
+1597: 
+1598:         mask = _extract_bool_array(mask)
+1599: 
+1600:         new_values = self.values if inplace else self.values.copy()
+1601: 
+1602:         if isinstance(new, np.ndarray) and len(new) == len(mask):
+1603:             new = new[mask]
+1604: 
+1605:         mask = _safe_reshape(mask, new_values.shape)
+1606: 
+1607:         new_values[mask] = new
+1608:         return [self.make_block(values=new_values)]
+1609: 
+1610:     def _maybe_coerce_values(self, values):
+1611:         """
+1612:         Unbox to an extension array.
+1613: 
+1614:         This will unbox an ExtensionArray stored in an Index or Series.
+1615:         ExtensionArrays pass through. No dtype coercion is done.
+1616: 
+1617:         Parameters
+1618:         ----------
+1619:         values : Index, Series, ExtensionArray
+1620: 
+1621:         Returns
+1622:         -------
+1623:         ExtensionArray
+1624:         """
+1625:         return extract_array(values)
+
+Bug-fix patch:
+diff --git a/pandas/core/internals/blocks.py b/pandas/core/internals/blocks.py
+index d028d8404..e4dcffae4 100644
+--- a/pandas/core/internals/blocks.py
++++ b/pandas/core/internals/blocks.py
+@@ -1599,7 +1599,7 @@ class ExtensionBlock(Block):
+ 
+         new_values = self.values if inplace else self.values.copy()
+ 
+-        if isinstance(new, np.ndarray) and len(new) == len(mask):
++        if isinstance(new, (np.ndarray, ExtensionArray)) and len(new) == len(mask):
+             new = new[mask]
+ 
+         mask = _safe_reshape(mask, new_values.shape)
+
+
+Related human-written test context:
+### TEST: TestUpdate.test_update (pandas/tests/series/methods/test_update.py)
+    def test_update(self):
+        s = Series([1.5, np.nan, 3.0, 4.0, np.nan])
+        s2 = Series([np.nan, 3.5, np.nan, 5.0])
+        s.update(s2)
+
+        expected = Series([1.5, 3.5, 3.0, 5.0, np.nan])
+        tm.assert_series_equal(s, expected)
+
+        # GH 3217
+        df = DataFrame([{"a": 1}, {"a": 3, "b": 2}])
+        df["c"] = np.nan
+
+        df["c"].update(Series(["foo"], index=[0]))
+        expected = DataFrame(
+            [[1, np.nan, "foo"], [3, 2.0, np.nan]], columns=["a", "b", "c"]
+        )
+        tm.assert_frame_equal(df, expected)
+
+Repository test style notes:
+- Repository appears to use pytest-style test organization.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

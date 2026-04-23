@@ -2,21 +2,21 @@
   "project": "pandas",
   "bug_id": "1",
   "slug": "pandas_1",
-  "status_final": "keep",
+  "status_final": "maybe",
   "recommended_status": "maybe",
   "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_1\\buggy",
   "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_1\\fixed",
   "source_files_changed": 1,
   "test_files_changed": 0,
   "human_test_names": [],
-  "human_test_files": [],
+  "human_test_files": [
+    "pandas/tests/dtypes/test_dtypes.py"
+  ],
   "source_file_paths": [
     "pandas/core/dtypes/common.py"
   ],
   "test_file_paths": [],
   "failing_tests": "\"pandas/tests/dtypes/test_dtypes.py\"",
-  "failing_test_names": [],
   "buggy_commit": "\"3fd150c\"",
-  "fixed_commit": "\"e41ee47a90bb1d8a1fa28fcefcd45ed8ef5cb946\"",
-  "context_level": "rich"
+  "fixed_commit": "\"e41ee47a90bb1d8a1fa28fcefcd45ed8ef5cb946\""
 }

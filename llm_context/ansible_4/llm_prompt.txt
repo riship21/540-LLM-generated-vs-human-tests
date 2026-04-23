@@ -1,0 +1,196 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: ansible
+Bug ID: 4
+Slug: ansible_4
+
+Relevant buggy source context:
+### FILE: lib/ansible/playbook/collectionsearch.py
+1: # Copyright: (c) 2019, Ansible Project
+2: # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+3: 
+4: from __future__ import (absolute_import, division, print_function)
+5: __metaclass__ = type
+6: 
+7: from ansible.module_utils.six import string_types
+8: from ansible.playbook.attribute import FieldAttribute
+9: from ansible.utils.collection_loader import AnsibleCollectionLoader
+10: 
+11: 
+12: def _ensure_default_collection(collection_list=None):
+13:     default_collection = AnsibleCollectionLoader().default_collection
+14: 
+15:     if collection_list is None:
+16:         collection_list = []
+17: 
+18:     if default_collection:  # FIXME: exclude role tasks?
+19:         if isinstance(collection_list, string_types):
+20:             collection_list = [collection_list]
+21: 
+22:         if default_collection not in collection_list:
+23:             collection_list.insert(0, default_collection)
+24: 
+25:     # if there's something in the list, ensure that builtin or legacy is always there too
+26:     if collection_list and 'ansible.builtin' not in collection_list and 'ansible.legacy' not in collection_list:
+27:         collection_list.append('ansible.legacy')
+28: 
+29:     return collection_list
+30: 
+31: 
+32: class CollectionSearch:
+
+12: def _ensure_default_collection(collection_list=None):
+13:     default_collection = AnsibleCollectionLoader().default_collection
+14: 
+15:     if collection_list is None:
+16:         collection_list = []
+17: 
+18:     if default_collection:  # FIXME: exclude role tasks?
+19:         if isinstance(collection_list, string_types):
+20:             collection_list = [collection_list]
+21: 
+22:         if default_collection not in collection_list:
+23:             collection_list.insert(0, default_collection)
+24: 
+25:     # if there's something in the list, ensure that builtin or legacy is always there too
+26:     if collection_list and 'ansible.builtin' not in collection_list and 'ansible.legacy' not in collection_list:
+27:         collection_list.append('ansible.legacy')
+28: 
+29:     return collection_list
+30: 
+31: 
+32: class CollectionSearch:
+33: 
+34:     # this needs to be populated before we can resolve tasks/roles/etc
+35:     _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection)
+36: 
+37:     def _load_collections(self, attr, ds):
+38:         # this will only be called if someone specified a value; call the shared value
+39:         _ensure_default_collection(collection_list=ds)
+40: 
+41:         if not ds:  # don't return an empty collection list, just return None
+42:             return None
+43: 
+44:         return ds
+
+21: 
+22:         if default_collection not in collection_list:
+23:             collection_list.insert(0, default_collection)
+24: 
+25:     # if there's something in the list, ensure that builtin or legacy is always there too
+26:     if collection_list and 'ansible.builtin' not in collection_list and 'ansible.legacy' not in collection_list:
+27:         collection_list.append('ansible.legacy')
+28: 
+29:     return collection_list
+30: 
+31: 
+32: class CollectionSearch:
+33: 
+34:     # this needs to be populated before we can resolve tasks/roles/etc
+35:     _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection)
+36: 
+37:     def _load_collections(self, attr, ds):
+38:         # this will only be called if someone specified a value; call the shared value
+39:         _ensure_default_collection(collection_list=ds)
+40: 
+41:         if not ds:  # don't return an empty collection list, just return None
+42:             return None
+43: 
+44:         return ds
+
+Bug-fix patch:
+diff --git a/lib/ansible/playbook/collectionsearch.py b/lib/ansible/playbook/collectionsearch.py
+index 93b80a8665..994e2e13e4 100644
+--- a/lib/ansible/playbook/collectionsearch.py
++++ b/lib/ansible/playbook/collectionsearch.py
+@@ -7,6 +7,10 @@ __metaclass__ = type
+ from ansible.module_utils.six import string_types
+ from ansible.playbook.attribute import FieldAttribute
+ from ansible.utils.collection_loader import AnsibleCollectionLoader
++from ansible.template import is_template, Environment
++from ansible.utils.display import Display
++
++display = Display()
+ 
+ 
+ def _ensure_default_collection(collection_list=None):
+@@ -32,7 +36,8 @@ def _ensure_default_collection(collection_list=None):
+ class CollectionSearch:
+ 
+     # this needs to be populated before we can resolve tasks/roles/etc
+-    _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection)
++    _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection,
++                                  always_post_validate=True, static=True)
+ 
+     def _load_collections(self, attr, ds):
+         # this will only be called if someone specified a value; call the shared value
+@@ -41,4 +46,13 @@ class CollectionSearch:
+         if not ds:  # don't return an empty collection list, just return None
+             return None
+ 
++        # This duplicates static attr checking logic from post_validate()
++        # because if the user attempts to template a collection name, it will
++        # error before it ever gets to the post_validate() warning.
++        env = Environment()
++        for collection_name in ds:
++            if is_template(collection_name, env):
++                display.warning('"collections" is not templatable, but we found: %s, '
++                                'it will not be templated and will be used "as is".' % (collection_name))
++
+         return ds
+
+
+Related human-written test context:
+### TEST FILE: test/units/playbook/test_collectionsearch.py
+# (c) 2020 Ansible Project
+#
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import (absolute_import, division, print_function)
+__metaclass__ = type
+
+from ansible.playbook.collectionsearch import CollectionSearch
+
+import pytest
+
+
+def test_collection_static_warning(capsys):
+    """Test that collection name is not templated.
+
+    Also, make sure that users see the warning message for the referenced name.
+    """
+
+    collection_name = 'foo.{{bar}}'
+    cs = CollectionSearch()
+    assert collection_name in cs._load_collections(None, [collection_name])
+
+    std_out, std_err = capsys.readouterr()
+    assert '[WARNING]: "collections" is not templatable, but we found: %s' % collection_name in std_err
+    assert '' == std_out
+
+Repository test style notes:
+- Repository appears to use pytest-style test organization.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

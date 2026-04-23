@@ -1,0 +1,48 @@
+### FILE: lib/ansible/module_utils/facts/system/distribution.py
+300: 
+301:     def parse_distribution_file_Debian(self, name, data, path, collected_facts):
+302:         debian_facts = {}
+303:         if 'Debian' in data or 'Raspbian' in data:
+304:             debian_facts['distribution'] = 'Debian'
+305:             release = re.search(r"PRETTY_NAME=[^(]+ \(?([^)]+?)\)", data)
+306:             if release:
+307:                 debian_facts['distribution_release'] = release.groups()[0]
+308: 
+309:             # Last resort: try to find release from tzdata as either lsb is missing or this is very old debian
+310:             if collected_facts['distribution_release'] == 'NA' and 'Debian' in data:
+311:                 dpkg_cmd = self.module.get_bin_path('dpkg')
+312:                 if dpkg_cmd:
+313:                     cmd = "%s --status tzdata|grep Provides|cut -f2 -d'-'" % dpkg_cmd
+314:                     rc, out, err = self.module.run_command(cmd)
+315:                     if rc == 0:
+316:                         debian_facts['distribution_release'] = out.strip()
+317:         elif 'Ubuntu' in data:
+318:             debian_facts['distribution'] = 'Ubuntu'
+319:             # nothing else to do, Ubuntu gets correct info from python functions
+320:         elif 'SteamOS' in data:
+321:             debian_facts['distribution'] = 'SteamOS'
+322:             # nothing else to do, SteamOS gets correct info from python functions
+323:         elif path == '/etc/lsb-release' and 'Kali' in data:
+324:             debian_facts['distribution'] = 'Kali'
+325:             release = re.search('DISTRIB_RELEASE=(.*)', data)
+326:             if release:
+327:                 debian_facts['distribution_release'] = release.groups()[0]
+328:         elif 'Devuan' in data:
+329:             debian_facts['distribution'] = 'Devuan'
+330:             release = re.search(r"PRETTY_NAME=\"?[^(\"]+ \(?([^) \"]+)\)?", data)
+331:             if release:
+332:                 debian_facts['distribution_release'] = release.groups()[0]
+333:             version = re.search(r"VERSION_ID=\"(.*)\"", data)
+334:             if version:
+335:                 debian_facts['distribution_version'] = version.group(1)
+336:                 debian_facts['distribution_major_version'] = version.group(1)
+337:         elif 'Cumulus' in data:
+338:             debian_facts['distribution'] = 'Cumulus Linux'
+339:             version = re.search(r"VERSION_ID=(.*)", data)
+340:             if version:
+341:                 major, _minor, _dummy_ver = version.group(1).split(".")
+342:                 debian_facts['distribution_version'] = version.group(1)
+343:                 debian_facts['distribution_major_version'] = major
+344: 
+345:             release = re.search(r'VERSION="(.*)"', data)
+346:             if release:

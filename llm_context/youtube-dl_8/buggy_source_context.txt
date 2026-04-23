@@ -1,0 +1,49 @@
+### FILE: youtube_dl/YoutubeDL.py
+938:                 # ENCODING is only defined in python 3.x
+939:                 if type == getattr(tokenize, 'ENCODING', None):
+940:                     continue
+941:                 elif type in [tokenize.NAME, tokenize.NUMBER]:
+942:                     current_selector = FormatSelector(SINGLE, string, [])
+943:                 elif type == tokenize.OP:
+944:                     if string == ')':
+945:                         if not inside_group:
+946:                             # ')' will be handled by the parentheses group
+947:                             tokens.restore_last_token()
+948:                         break
+949:                     elif inside_merge and string in ['/', ',']:
+950:                         tokens.restore_last_token()
+951:                         break
+952:                     elif inside_choice and string == ',':
+953:                         tokens.restore_last_token()
+954:                         break
+955:                     elif string == ',':
+956:                         selectors.append(current_selector)
+957:                         current_selector = None
+958:                     elif string == '/':
+959:                         first_choice = current_selector
+960:                         second_choice = _parse_format_selection(tokens, inside_choice=True)
+961:                         current_selector = None
+962:                         selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))
+963:                     elif string == '[':
+964:                         if not current_selector:
+965:                             current_selector = FormatSelector(SINGLE, 'best', [])
+966:                         format_filter = _parse_filter(tokens)
+967:                         current_selector.filters.append(format_filter)
+968:                     elif string == '(':
+969:                         if current_selector:
+970:                             raise syntax_error('Unexpected "("', start)
+971:                         group = _parse_format_selection(tokens, inside_group=True)
+972:                         current_selector = FormatSelector(GROUP, group, [])
+973:                     elif string == '+':
+974:                         video_selector = current_selector
+975:                         audio_selector = _parse_format_selection(tokens, inside_merge=True)
+976:                         current_selector = FormatSelector(MERGE, (video_selector, audio_selector), [])
+977:                     else:
+978:                         raise syntax_error('Operator not recognized: "{0}"'.format(string), start)
+979:                 elif type == tokenize.ENDMARKER:
+980:                     break
+981:             if current_selector:
+982:                 selectors.append(current_selector)
+983:             return selectors
+984: 
+985:         def _build_selector_function(selector):

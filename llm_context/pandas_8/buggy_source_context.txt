@@ -1,0 +1,52 @@
+### FILE: pandas/core/internals/blocks.py
+708:             # causes infinite loop. Cast and retry only if not objectblock.
+709:             if is_object_dtype(self):
+710:                 raise AssertionError
+711: 
+712:             # try again with a compatible block
+713:             block = self.astype(object)
+714:             return block.replace(
+715:                 to_replace=to_replace,
+716:                 value=value,
+717:                 inplace=inplace,
+718:                 regex=regex,
+719:                 convert=convert,
+720:             )
+721: 
+722:         values = self.values
+723:         if lib.is_scalar(to_replace) and isinstance(values, np.ndarray):
+724:             # The only non-DatetimeLike class that also has a non-trivial
+725:             #  try_coerce_args is ObjectBlock, but that overrides replace,
+726:             #  so does not get here.
+727:             to_replace = convert_scalar_for_putitemlike(to_replace, values.dtype)
+728: 
+729:         mask = missing.mask_missing(values, to_replace)
+730: 
+731:         if not mask.any():
+732:             if inplace:
+733:                 return [self]
+734:             return [self.copy()]
+735: 
+736:         try:
+737:             blocks = self.putmask(mask, value, inplace=inplace)
+738:             # Note: it is _not_ the case that self._can_hold_element(value)
+739:             #  is always true at this point.  In particular, that can fail
+740:             #  for:
+741:             #   "2u" with bool-dtype, float-dtype
+742:             #   0.5 with int64-dtype
+743:             #   np.nan with int64-dtype
+744:         except (TypeError, ValueError):
+745:             # GH 22083, TypeError or ValueError occurred within error handling
+746:             # causes infinite loop. Cast and retry only if not objectblock.
+747:             if is_object_dtype(self):
+748:                 raise
+749: 
+750:             assert not self._can_hold_element(value), value
+751: 
+752:             # try again with a compatible block
+753:             block = self.astype(object)
+754:             return block.replace(
+755:                 to_replace=original_to_replace,
+756:                 value=value,
+757:                 inplace=inplace,
+758:                 regex=regex,

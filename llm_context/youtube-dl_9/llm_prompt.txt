@@ -1,0 +1,466 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: youtube-dl
+Bug ID: 9
+Slug: youtube-dl_9
+
+Relevant buggy source context:
+### FILE: youtube_dl/YoutubeDL.py
+911:         return _filter
+912: 
+913:     def build_format_selector(self, format_spec):
+914:         def syntax_error(note, start):
+915:             message = (
+916:                 'Invalid format specification: '
+917:                 '{0}\n\t{1}\n\t{2}^'.format(note, format_spec, ' ' * start[1]))
+918:             return SyntaxError(message)
+919: 
+920:         PICKFIRST = 'PICKFIRST'
+921:         MERGE = 'MERGE'
+922:         SINGLE = 'SINGLE'
+923:         GROUP = 'GROUP'
+924:         FormatSelector = collections.namedtuple('FormatSelector', ['type', 'selector', 'filters'])
+925: 
+926:         def _parse_filter(tokens):
+927:             filter_parts = []
+928:             for type, string, start, _, _ in tokens:
+929:                 if type == tokenize.OP and string == ']':
+930:                     return ''.join(filter_parts)
+931:                 else:
+932:                     filter_parts.append(string)
+933: 
+934:         def _parse_format_selection(tokens, endwith=[]):
+935:             selectors = []
+936:             current_selector = None
+937:             for type, string, start, _, _ in tokens:
+938:                 # ENCODING is only defined in python 3.x
+939:                 if type == getattr(tokenize, 'ENCODING', None):
+940:                     continue
+941:                 elif type in [tokenize.NAME, tokenize.NUMBER]:
+942:                     current_selector = FormatSelector(SINGLE, string, [])
+943:                 elif type == tokenize.OP:
+944:                     if string in endwith:
+945:                         break
+946:                     elif string == ')':
+947:                         # ')' will be handled by the parentheses group
+948:                         tokens.restore_last_token()
+949:                         break
+950:                     if string == ',':
+951:                         selectors.append(current_selector)
+952:                         current_selector = None
+953:                     elif string == '/':
+954:                         first_choice = current_selector
+955:                         second_choice = _parse_format_selection(tokens, [','])
+956:                         current_selector = None
+957:                         selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))
+
+921:         MERGE = 'MERGE'
+922:         SINGLE = 'SINGLE'
+923:         GROUP = 'GROUP'
+924:         FormatSelector = collections.namedtuple('FormatSelector', ['type', 'selector', 'filters'])
+925: 
+926:         def _parse_filter(tokens):
+927:             filter_parts = []
+928:             for type, string, start, _, _ in tokens:
+929:                 if type == tokenize.OP and string == ']':
+930:                     return ''.join(filter_parts)
+931:                 else:
+932:                     filter_parts.append(string)
+933: 
+934:         def _parse_format_selection(tokens, endwith=[]):
+935:             selectors = []
+936:             current_selector = None
+937:             for type, string, start, _, _ in tokens:
+938:                 # ENCODING is only defined in python 3.x
+939:                 if type == getattr(tokenize, 'ENCODING', None):
+940:                     continue
+941:                 elif type in [tokenize.NAME, tokenize.NUMBER]:
+942:                     current_selector = FormatSelector(SINGLE, string, [])
+943:                 elif type == tokenize.OP:
+944:                     if string in endwith:
+945:                         break
+946:                     elif string == ')':
+947:                         # ')' will be handled by the parentheses group
+948:                         tokens.restore_last_token()
+949:                         break
+950:                     if string == ',':
+951:                         selectors.append(current_selector)
+952:                         current_selector = None
+953:                     elif string == '/':
+954:                         first_choice = current_selector
+955:                         second_choice = _parse_format_selection(tokens, [','])
+956:                         current_selector = None
+957:                         selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))
+958:                     elif string == '[':
+959:                         if not current_selector:
+960:                             current_selector = FormatSelector(SINGLE, 'best', [])
+961:                         format_filter = _parse_filter(tokens)
+962:                         current_selector.filters.append(format_filter)
+963:                     elif string == '(':
+964:                         if current_selector:
+965:                             raise syntax_error('Unexpected "("', start)
+966:                         current_selector = FormatSelector(GROUP, _parse_format_selection(tokens, [')']), [])
+967:                     elif string == '+':
+968:                         video_selector = current_selector
+969:                         audio_selector = _parse_format_selection(tokens, [','])
+970:                         current_selector = None
+971:                         selectors.append(FormatSelector(MERGE, (video_selector, audio_selector), []))
+972:                     else:
+973:                         raise syntax_error('Operator not recognized: "{0}"'.format(string), start)
+974:                 elif type == tokenize.ENDMARKER:
+975:                     break
+976:             if current_selector:
+977:                 selectors.append(current_selector)
+978:             return selectors
+
+943:                 elif type == tokenize.OP:
+944:                     if string in endwith:
+945:                         break
+946:                     elif string == ')':
+947:                         # ')' will be handled by the parentheses group
+948:                         tokens.restore_last_token()
+949:                         break
+950:                     if string == ',':
+951:                         selectors.append(current_selector)
+952:                         current_selector = None
+953:                     elif string == '/':
+954:                         first_choice = current_selector
+955:                         second_choice = _parse_format_selection(tokens, [','])
+956:                         current_selector = None
+957:                         selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))
+958:                     elif string == '[':
+959:                         if not current_selector:
+960:                             current_selector = FormatSelector(SINGLE, 'best', [])
+961:                         format_filter = _parse_filter(tokens)
+962:                         current_selector.filters.append(format_filter)
+963:                     elif string == '(':
+964:                         if current_selector:
+965:                             raise syntax_error('Unexpected "("', start)
+966:                         current_selector = FormatSelector(GROUP, _parse_format_selection(tokens, [')']), [])
+967:                     elif string == '+':
+968:                         video_selector = current_selector
+969:                         audio_selector = _parse_format_selection(tokens, [','])
+970:                         current_selector = None
+971:                         selectors.append(FormatSelector(MERGE, (video_selector, audio_selector), []))
+972:                     else:
+973:                         raise syntax_error('Operator not recognized: "{0}"'.format(string), start)
+974:                 elif type == tokenize.ENDMARKER:
+975:                     break
+976:             if current_selector:
+977:                 selectors.append(current_selector)
+978:             return selectors
+979: 
+980:         def _build_selector_function(selector):
+981:             if isinstance(selector, list):
+982:                 fs = [_build_selector_function(s) for s in selector]
+983: 
+984:                 def selector_function(formats):
+985:                     for f in fs:
+986:                         for format in f(formats):
+987:                             yield format
+988:                 return selector_function
+989:             elif selector.type == GROUP:
+990:                 selector_function = _build_selector_function(selector.selector)
+991:             elif selector.type == PICKFIRST:
+992:                 fs = [_build_selector_function(s) for s in selector.selector]
+993: 
+994:                 def selector_function(formats):
+
+Bug-fix patch:
+diff --git a/youtube_dl/YoutubeDL.py b/youtube_dl/YoutubeDL.py
+index e5b46f87e..5deb4848e 100755
+--- a/youtube_dl/YoutubeDL.py
++++ b/youtube_dl/YoutubeDL.py
+@@ -931,7 +931,7 @@ class YoutubeDL(object):
+                 else:
+                     filter_parts.append(string)
+ 
+-        def _parse_format_selection(tokens, endwith=[]):
++        def _parse_format_selection(tokens, inside_merge=False, inside_choice=False, inside_group=False):
+             selectors = []
+             current_selector = None
+             for type, string, start, _, _ in tokens:
+@@ -941,18 +941,23 @@ class YoutubeDL(object):
+                 elif type in [tokenize.NAME, tokenize.NUMBER]:
+                     current_selector = FormatSelector(SINGLE, string, [])
+                 elif type == tokenize.OP:
+-                    if string in endwith:
++                    if string == ')':
++                        if not inside_group:
++                            # ')' will be handled by the parentheses group
++                            tokens.restore_last_token()
+                         break
+-                    elif string == ')':
+-                        # ')' will be handled by the parentheses group
++                    elif inside_merge and string in ['/', ',']:
+                         tokens.restore_last_token()
+                         break
+-                    if string == ',':
++                    elif inside_choice and string == ',':
++                        tokens.restore_last_token()
++                        break
++                    elif string == ',':
+                         selectors.append(current_selector)
+                         current_selector = None
+                     elif string == '/':
+                         first_choice = current_selector
+-                        second_choice = _parse_format_selection(tokens, [','])
++                        second_choice = _parse_format_selection(tokens, inside_choice=True)
+                         current_selector = None
+                         selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))
+                     elif string == '[':
+@@ -963,12 +968,12 @@ class YoutubeDL(object):
+                     elif string == '(':
+                         if current_selector:
+                             raise syntax_error('Unexpected "("', start)
+-                        current_selector = FormatSelector(GROUP, _parse_format_selection(tokens, [')']), [])
++                        group = _parse_format_selection(tokens, inside_group=True)
++                        current_selector = FormatSelector(GROUP, group, [])
+                     elif string == '+':
+                         video_selector = current_selector
+-                        audio_selector = _parse_format_selection(tokens, [','])
+-                        current_selector = None
+-                        selectors.append(FormatSelector(MERGE, (video_selector, audio_selector), []))
++                        audio_selector = _parse_format_selection(tokens, inside_merge=True)
++                        current_selector = FormatSelector(MERGE, (video_selector, audio_selector), [])
+                     else:
+                         raise syntax_error('Operator not recognized: "{0}"'.format(string), start)
+                 elif type == tokenize.ENDMARKER:
+
+
+Related human-written test context:
+### TEST FILE: test/test_YoutubeDL.py
+#!/usr/bin/env python
+
+from __future__ import unicode_literals
+
+# Allow direct execution
+import os
+import sys
+import unittest
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import copy
+
+from test.helper import FakeYDL, assertRegexpMatches
+from youtube_dl import YoutubeDL
+from youtube_dl.compat import compat_str
+from youtube_dl.extractor import YoutubeIE
+from youtube_dl.postprocessor.common import PostProcessor
+from youtube_dl.utils import match_filter_func
+
+TEST_URL = 'http://localhost/sample.mp4'
+
+
+class YDL(FakeYDL):
+    def __init__(self, *args, **kwargs):
+        super(YDL, self).__init__(*args, **kwargs)
+        self.downloaded_info_dicts = []
+        self.msgs = []
+
+    def process_info(self, info_dict):
+        self.downloaded_info_dicts.append(info_dict)
+
+    def to_screen(self, msg):
+        self.msgs.append(msg)
+
+
+def _make_result(formats, **kwargs):
+    res = {
+        'formats': formats,
+        'id': 'testid',
+        'title': 'testttitle',
+        'extractor': 'testex',
+    }
+    res.update(**kwargs)
+    return res
+
+
+class TestFormatSelection(unittest.TestCase):
+    def test_prefer_free_formats(self):
+        # Same resolution => download webm
+        ydl = YDL()
+        ydl.params['prefer_free_formats'] = True
+        formats = [
+            {'ext': 'webm', 'height': 460, 'url': TEST_URL},
+            {'ext': 'mp4', 'height': 460, 'url': TEST_URL},
+        ]
+        info_dict = _make_result(formats)
+        yie = YoutubeIE(ydl)
+        yie._sort_formats(info_dict['formats'])
+        ydl.process_ie_result(info_dict)
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['ext'], 'webm')
+
+        # Different resolution => download best quality (mp4)
+        ydl = YDL()
+        ydl.params['prefer_free_formats'] = True
+        formats = [
+            {'ext': 'webm', 'height': 720, 'url': TEST_URL},
+            {'ext': 'mp4', 'height': 1080, 'url': TEST_URL},
+        ]
+        info_dict['formats'] = formats
+        yie = YoutubeIE(ydl)
+        yie._sort_formats(info_dict['formats'])
+        ydl.process_ie_result(info_dict)
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['ext'], 'mp4')
+
+        # No prefer_free_formats => prefer mp4 and flv for greater compatibility
+        ydl = YDL()
+        ydl.params['prefer_free_formats'] = False
+        formats = [
+            {'ext': 'webm', 'height': 720, 'url': TEST_URL},
+            {'ext': 'mp4', 'height': 720, 'url': TEST_URL},
+            {'ext': 'flv', 'height': 720, 'url': TEST_URL},
+        ]
+        info_dict['formats'] = formats
+        yie = YoutubeIE(ydl)
+        yie._sort_formats(info_dict['formats'])
+        ydl.process_ie_result(info_dict)
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['ext'], 'mp4')
+
+        ydl = YDL()
+        ydl.params['prefer_free_formats'] = False
+        formats = [
+            {'ext': 'flv', 'height': 720, 'url': TEST_URL},
+            {'ext': 'webm', 'height': 720, 'url': TEST_URL},
+        ]
+        info_dict['formats'] = formats
+        yie = YoutubeIE(ydl)
+        yie._sort_formats(info_dict['formats'])
+        ydl.process_ie_result(info_dict)
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['ext'], 'flv')
+
+    def test_format_selection(self):
+        formats = [
+            {'format_id': '35', 'ext': 'mp4', 'preference': 1, 'url': TEST_URL},
+            {'format_id': '45', 'ext': 'webm', 'preference': 2, 'url': TEST_URL},
+            {'format_id': '47', 'ext': 'webm', 'preference': 3, 'url': TEST_URL},
+            {'format_id': '2', 'ext': 'flv', 'preference': 4, 'url': TEST_URL},
+        ]
+        info_dict = _make_result(formats)
+
+        ydl = YDL({'format': '20/47'})
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], '47')
+
+        ydl = YDL({'format': '20/71/worst'})
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], '35')
+
+        ydl = YDL()
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], '2')
+
+        ydl = YDL({'format': 'webm/mp4'})
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], '47')
+
+        ydl = YDL({'format': '3gp/40/mp4'})
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], '35')
+
+    def test_format_selection_audio(self):
+        formats = [
+            {'format_id': 'audio-low', 'ext': 'webm', 'preference': 1, 'vcodec': 'none', 'url': TEST_URL},
+            {'format_id': 'audio-mid', 'ext': 'webm', 'preference': 2, 'vcodec': 'none', 'url': TEST_URL},
+            {'format_id': 'audio-high', 'ext': 'flv', 'preference': 3, 'vcodec': 'none', 'url': TEST_URL},
+            {'format_id': 'vid', 'ext': 'mp4', 'preference': 4, 'url': TEST_URL},
+        ]
+        info_dict = _make_result(formats)
+
+        ydl = YDL({'format': 'bestaudio'})
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], 'audio-high')
+
+        ydl = YDL({'format': 'worstaudio'})
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], 'audio-low')
+
+        formats = [
+            {'format_id': 'vid-low', 'ext': 'mp4', 'preference': 1, 'url': TEST_URL},
+            {'format_id': 'vid-high', 'ext': 'mp4', 'preference': 2, 'url': TEST_URL},
+        ]
+        info_dict = _make_result(formats)
+
+        ydl = YDL({'format': 'bestaudio/worstaudio/best'})
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], 'vid-high')
+
+    def test_format_selection_audio_exts(self):
+        formats = [
+            {'format_id': 'mp3-64', 'ext': 'mp3', 'abr': 64, 'url': 'http://_', 'vcodec': 'none'},
+            {'format_id': 'ogg-64', 'ext': 'ogg', 'abr': 64, 'url': 'http://_', 'vcodec': 'none'},
+            {'format_id': 'aac-64', 'ext': 'aac', 'abr': 64, 'url': 'http://_', 'vcodec': 'none'},
+            {'format_id': 'mp3-32', 'ext': 'mp3', 'abr': 32, 'url': 'http://_', 'vcodec': 'none'},
+            {'format_id': 'aac-32', 'ext': 'aac', 'abr': 32, 'url': 'http://_', 'vcodec': 'none'},
+        ]
+
+        info_dict = _make_result(formats)
+        ydl = YDL({'format': 'best'})
+        ie = YoutubeIE(ydl)
+        ie._sort_formats(info_dict['formats'])
+        ydl.process_ie_result(copy.deepcopy(info_dict))
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], 'aac-64')
+
+        ydl = YDL({'format': 'mp3'})
+        ie = YoutubeIE(ydl)
+        ie._sort_formats(info_dict['formats'])
+        ydl.process_ie_result(copy.deepcopy(info_dict))
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], 'mp3-64')
+
+        ydl = YDL({'prefer_free_formats': True})
+        ie = YoutubeIE(ydl)
+        ie._sort_formats(info_dict['formats'])
+        ydl.process_ie_result(copy.deepcopy(info_dict))
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], 'ogg-64')
+
+    def test_format_selection_video(self):
+        formats = [
+            {'format_id': 'dash-video-low', 'ext': 'mp4', 'preference': 1, 'acodec': 'none', 'url': TEST_URL},
+            {'format_id': 'dash-video-high', 'ext': 'mp4', 'preference': 2, 'acodec': 'none', 'url': TEST_URL},
+            {'format_id': 'vid', 'ext': 'mp4', 'preference': 3, 'url': TEST_URL},
+        ]
+        info_dict = _make_result(formats)
+
+        ydl = YDL({'format': 'bestvideo'})
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], 'dash-video-high')
+
+        ydl = YDL({'format': 'worstvideo'})
+        ydl.process_ie_result(info_dict.copy())
+        downloaded = ydl.downloaded_info_dicts[0]
+        self.assertEqual(downloaded['format_id'], 'dash-video-low')
+
+    def test_youtube_format_selection(self):
+        order = [
+            '38', '37', '46', '22', '45', '35', '44', '18', '34', '43', '6', '5', '36', '17', '13',
+
+Repository test style notes:
+- Repository appears to use unittest-style assertions in at least some tests.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

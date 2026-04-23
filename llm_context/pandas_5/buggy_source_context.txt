@@ -1,0 +1,48 @@
+### FILE: pandas/core/indexes/base.py
+3508: 
+3509:             # Join left and right
+3510:             # Join on same leveled multi-index frames is supported
+3511:             join_idx, lidx, ridx = self_jnlevels.join(
+3512:                 other_jnlevels, how, return_indexers=True
+3513:             )
+3514: 
+3515:             # Restore the dropped levels
+3516:             # Returned index level order is
+3517:             # common levels, ldrop_names, rdrop_names
+3518:             dropped_names = ldrop_names + rdrop_names
+3519: 
+3520:             levels, codes, names = _restore_dropped_levels_multijoin(
+3521:                 self, other, dropped_names, join_idx, lidx, ridx
+3522:             )
+3523: 
+3524:             # Re-create the multi-index
+3525:             multi_join_idx = MultiIndex(
+3526:                 levels=levels, codes=codes, names=names, verify_integrity=False
+3527:             )
+3528: 
+3529:             multi_join_idx = multi_join_idx.remove_unused_levels()
+3530: 
+3531:             if return_indexers:
+3532:                 return multi_join_idx, lidx, ridx
+3533:             else:
+3534:                 return multi_join_idx
+3535: 
+3536:         jl = list(overlap)[0]
+3537: 
+3538:         # Case where only one index is multi
+3539:         # make the indices into mi's that match
+3540:         flip_order = False
+3541:         if self_is_mi:
+3542:             self, other = other, self
+3543:             flip_order = True
+3544:             # flip if join method is right or left
+3545:             how = {"right": "left", "left": "right"}.get(how, how)
+3546: 
+3547:         level = other.names.index(jl)
+3548:         result = self._join_level(
+3549:             other, level, how=how, return_indexers=return_indexers
+3550:         )
+3551: 
+3552:         if flip_order:
+3553:             if isinstance(result, tuple):
+3554:                 return result[0], result[2], result[1]

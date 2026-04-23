@@ -1,0 +1,53 @@
+### FILE: youtube_dl/jsinterp.py
+178:         if m:
+179:             val = local_vars[m.group('in')]
+180:             idx = self.interpret_expression(
+181:                 m.group('idx'), local_vars, allow_recursion - 1)
+182:             return val[idx]
+183: 
+184:         for op, opfunc in _OPERATORS:
+185:             m = re.match(r'(?P<x>.+?)%s(?P<y>.+)' % re.escape(op), expr)
+186:             if not m:
+187:                 continue
+188:             x, abort = self.interpret_statement(
+189:                 m.group('x'), local_vars, allow_recursion - 1)
+190:             if abort:
+191:                 raise ExtractorError(
+192:                     'Premature left-side return of %s in %r' % (op, expr))
+193:             y, abort = self.interpret_statement(
+194:                 m.group('y'), local_vars, allow_recursion - 1)
+195:             if abort:
+196:                 raise ExtractorError(
+197:                     'Premature right-side return of %s in %r' % (op, expr))
+198:             return opfunc(x, y)
+199: 
+200:         m = re.match(
+201:             r'^(?P<func>%s)\((?P<args>[a-zA-Z0-9_$,]+)\)$' % _NAME_RE, expr)
+202:         if m:
+203:             fname = m.group('func')
+204:             argvals = tuple([
+205:                 int(v) if v.isdigit() else local_vars[v]
+206:                 for v in m.group('args').split(',')])
+207:             if fname not in self._functions:
+208:                 self._functions[fname] = self.extract_function(fname)
+209:             return self._functions[fname](argvals)
+210: 
+211:         raise ExtractorError('Unsupported JS expression %r' % expr)
+212: 
+213:     def extract_object(self, objname):
+214:         obj = {}
+215:         obj_m = re.search(
+216:             (r'(?:var\s+)?%s\s*=\s*\{' % re.escape(objname)) +
+217:             r'\s*(?P<fields>([a-zA-Z$0-9]+\s*:\s*function\(.*?\)\s*\{.*?\}(?:,\s*)?)*)' +
+218:             r'\}\s*;',
+219:             self.code)
+220:         fields = obj_m.group('fields')
+221:         # Currently, it only supports function definitions
+222:         fields_m = re.finditer(
+223:             r'(?P<key>[a-zA-Z$0-9]+)\s*:\s*function'
+224:             r'\((?P<args>[a-z,]+)\){(?P<code>[^}]+)}',
+225:             fields)
+226:         for f in fields_m:
+227:             argnames = f.group('args').split(',')
+228:             obj[f.group('key')] = self.build_function(argnames, f.group('code'))
+229: 

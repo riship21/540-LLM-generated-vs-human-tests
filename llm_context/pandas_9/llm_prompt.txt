@@ -1,0 +1,488 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: pandas
+Bug ID: 9
+Slug: pandas_9
+
+Relevant buggy source context:
+### FILE: pandas/core/arrays/categorical.py
+17:     maybe_cast_to_extension_array,
+18:     maybe_infer_to_datetimelike,
+19: )
+20: from pandas.core.dtypes.common import (
+21:     ensure_int64,
+22:     ensure_object,
+23:     is_categorical_dtype,
+24:     is_datetime64_dtype,
+25:     is_dict_like,
+26:     is_dtype_equal,
+27:     is_extension_array_dtype,
+28:     is_integer_dtype,
+29:     is_iterator,
+30:     is_list_like,
+31:     is_object_dtype,
+32:     is_scalar,
+33:     is_sequence,
+34:     is_timedelta64_dtype,
+35:     needs_i8_conversion,
+36: )
+37: from pandas.core.dtypes.dtypes import CategoricalDtype
+38: from pandas.core.dtypes.generic import ABCIndexClass, ABCSeries
+39: from pandas.core.dtypes.inference import is_hashable
+40: from pandas.core.dtypes.missing import isna, notna
+41: 
+42: from pandas.core import ops
+43: from pandas.core.accessor import PandasDelegate, delegate_names
+44: import pandas.core.algorithms as algorithms
+45: from pandas.core.algorithms import _get_data_algo, factorize, take_1d, unique1d
+46: from pandas.core.array_algos.transforms import shift
+47: from pandas.core.arrays._mixins import _T, NDArrayBackedExtensionArray
+48: from pandas.core.base import NoNewAttributesMixin, PandasObject, _shared_docs
+49: import pandas.core.common as com
+50: from pandas.core.construction import array, extract_array, sanitize_array
+51: from pandas.core.indexers import check_array_indexer, deprecate_ndim_indexing
+52: from pandas.core.missing import interpolate_2d
+53: from pandas.core.ops.common import unpack_zerodim_and_defer
+54: from pandas.core.sorting import nargsort
+55: 
+56: from pandas.io.formats import console
+57: 
+58: 
+59: def _cat_compare_op(op):
+60:     opname = f"__{op.__name__}__"
+61: 
+62:     @unpack_zerodim_and_defer(opname)
+63:     def func(self, other):
+
+1814: 
+1815:     # ------------------------------------------------------------------
+1816: 
+1817:     def take_nd(self, indexer, allow_fill: bool = False, fill_value=None):
+1818:         # GH#27745 deprecate alias that other EAs dont have
+1819:         warn(
+1820:             "Categorical.take_nd is deprecated, use Categorical.take instead",
+1821:             FutureWarning,
+1822:             stacklevel=2,
+1823:         )
+1824:         return self.take(indexer, allow_fill=allow_fill, fill_value=fill_value)
+1825: 
+1826:     def __iter__(self):
+1827:         """
+1828:         Returns an Iterator over the values of this Categorical.
+1829:         """
+1830:         return iter(self._internal_get_values().tolist())
+1831: 
+1832:     def __contains__(self, key) -> bool:
+1833:         """
+1834:         Returns True if `key` is in this Categorical.
+1835:         """
+1836:         # if key is a NaN, check if any NaN is in self.
+1837:         if is_scalar(key) and isna(key):
+1838:             return self.isna().any()
+1839: 
+1840:         return contains(self, key, container=self._codes)
+1841: 
+1842:     def _tidy_repr(self, max_vals=10, footer=True) -> str:
+1843:         """
+1844:         a short repr displaying only max_vals and an optional (but default
+1845:         footer)
+1846:         """
+1847:         num = max_vals // 2
+1848:         head = self[:num]._get_repr(length=False, footer=False)
+1849:         tail = self[-(max_vals - num) :]._get_repr(length=False, footer=False)
+1850: 
+1851:         result = f"{head[:-1]}, ..., {tail[1:]}"
+1852:         if footer:
+1853:             result = f"{result}\n{self._repr_footer()}"
+1854: 
+1855:         return str(result)
+1856: 
+1857:     def _repr_categories(self):
+1858:         """
+1859:         return the base repr for the categories
+1860:         """
+
+### FILE: pandas/core/indexes/category.py
+1: from typing import Any, List
+2: import warnings
+3: 
+4: import numpy as np
+5: 
+6: from pandas._config import get_option
+7: 
+8: from pandas._libs import index as libindex
+9: from pandas._libs.hashtable import duplicated_int64
+10: from pandas._libs.lib import no_default
+11: from pandas._typing import Label
+12: from pandas.util._decorators import Appender, cache_readonly, doc
+13: 
+14: from pandas.core.dtypes.common import (
+15:     ensure_platform_int,
+16:     is_categorical_dtype,
+17:     is_interval_dtype,
+18:     is_list_like,
+19:     is_scalar,
+20: )
+21: from pandas.core.dtypes.dtypes import CategoricalDtype
+22: from pandas.core.dtypes.missing import isna
+23: 
+24: from pandas.core import accessor
+25: from pandas.core.algorithms import take_1d
+26: from pandas.core.arrays.categorical import Categorical, contains, recode_for_categories
+27: import pandas.core.common as com
+28: from pandas.core.construction import extract_array
+29: import pandas.core.indexes.base as ibase
+30: from pandas.core.indexes.base import Index, _index_shared_docs, maybe_extract_name
+31: from pandas.core.indexes.extension import ExtensionIndex, inherit_names
+32: import pandas.core.missing as missing
+33: from pandas.core.ops import get_op_result_name
+34: 
+35: _index_doc_kwargs = dict(ibase._index_doc_kwargs)
+36: _index_doc_kwargs.update(dict(target_klass="CategoricalIndex"))
+37: 
+38: 
+39: @inherit_names(
+40:     [
+41:         "argsort",
+42:         "_internal_get_values",
+43:         "tolist",
+44:         "codes",
+45:         "categories",
+
+345:         if len(self) > max_seq_items:
+346:             attrs.append(("length", len(self)))
+347:         return attrs
+348: 
+349:     # --------------------------------------------------------------------
+350: 
+351:     @property
+352:     def inferred_type(self) -> str:
+353:         return "categorical"
+354: 
+355:     @property
+356:     def values(self):
+357:         """ return the underlying data, which is a Categorical """
+358:         return self._data
+359: 
+360:     @property
+361:     def _has_complex_internals(self) -> bool:
+362:         # used to avoid libreduction code paths, which raise or require conversion
+363:         return True
+364: 
+365:     @doc(Index.__contains__)
+366:     def __contains__(self, key: Any) -> bool:
+367:         # if key is a NaN, check if any NaN is in self.
+368:         if is_scalar(key) and isna(key):
+369:             return self.hasnans
+370: 
+371:         hash(key)
+372:         return contains(self, key, container=self._engine)
+373: 
+374:     @doc(Index.astype)
+375:     def astype(self, dtype, copy=True):
+376:         if is_interval_dtype(dtype):
+377:             from pandas import IntervalIndex
+378: 
+379:             return IntervalIndex(np.array(self))
+380:         elif is_categorical_dtype(dtype):
+381:             # GH 18630
+382:             dtype = self.dtype.update_dtype(dtype)
+383:             if dtype == self.dtype:
+384:                 return self.copy() if copy else self
+385: 
+386:         return Index.astype(self, dtype=dtype, copy=copy)
+387: 
+388:     @cache_readonly
+389:     def _isnan(self):
+390:         """ return if each value is nan"""
+391:         return self._data.codes == -1
+392: 
+393:     @doc(Index.fillna)
+394:     def fillna(self, value, downcast=None):
+
+Bug-fix patch:
+diff --git a/pandas/core/arrays/categorical.py b/pandas/core/arrays/categorical.py
+index 0c9db271e..9cdb5dfc4 100644
+--- a/pandas/core/arrays/categorical.py
++++ b/pandas/core/arrays/categorical.py
+@@ -37,7 +37,7 @@ from pandas.core.dtypes.common import (
+ from pandas.core.dtypes.dtypes import CategoricalDtype
+ from pandas.core.dtypes.generic import ABCIndexClass, ABCSeries
+ from pandas.core.dtypes.inference import is_hashable
+-from pandas.core.dtypes.missing import isna, notna
++from pandas.core.dtypes.missing import is_valid_nat_for_dtype, isna, notna
+ 
+ from pandas.core import ops
+ from pandas.core.accessor import PandasDelegate, delegate_names
+@@ -1834,7 +1834,7 @@ class Categorical(NDArrayBackedExtensionArray, PandasObject):
+         Returns True if `key` is in this Categorical.
+         """
+         # if key is a NaN, check if any NaN is in self.
+-        if is_scalar(key) and isna(key):
++        if is_valid_nat_for_dtype(key, self.categories.dtype):
+             return self.isna().any()
+ 
+         return contains(self, key, container=self._codes)
+diff --git a/pandas/core/indexes/category.py b/pandas/core/indexes/category.py
+index 0cf6698d3..80d3e5c8a 100644
+--- a/pandas/core/indexes/category.py
++++ b/pandas/core/indexes/category.py
+@@ -19,7 +19,7 @@ from pandas.core.dtypes.common import (
+     is_scalar,
+ )
+ from pandas.core.dtypes.dtypes import CategoricalDtype
+-from pandas.core.dtypes.missing import isna
++from pandas.core.dtypes.missing import is_valid_nat_for_dtype, isna
+ 
+ from pandas.core import accessor
+ from pandas.core.algorithms import take_1d
+@@ -365,10 +365,9 @@ class CategoricalIndex(ExtensionIndex, accessor.PandasDelegate):
+     @doc(Index.__contains__)
+     def __contains__(self, key: Any) -> bool:
+         # if key is a NaN, check if any NaN is in self.
+-        if is_scalar(key) and isna(key):
++        if is_valid_nat_for_dtype(key, self.categories.dtype):
+             return self.hasnans
+ 
+-        hash(key)
+         return contains(self, key, container=self._engine)
+ 
+     @doc(Index.astype)
+
+
+Related human-written test context:
+### TEST FILE: pandas/tests/indexes/categorical/test_indexing.py
+import numpy as np
+import pytest
+
+import pandas as pd
+from pandas import CategoricalIndex, Index, IntervalIndex
+import pandas._testing as tm
+
+
+class TestTake:
+    def test_take_fill_value(self):
+        # GH 12631
+
+        # numeric category
+        idx = pd.CategoricalIndex([1, 2, 3], name="xxx")
+        result = idx.take(np.array([1, 0, -1]))
+        expected = pd.CategoricalIndex([2, 1, 3], name="xxx")
+        tm.assert_index_equal(result, expected)
+        tm.assert_categorical_equal(result.values, expected.values)
+
+        # fill_value
+        result = idx.take(np.array([1, 0, -1]), fill_value=True)
+        expected = pd.CategoricalIndex([2, 1, np.nan], categories=[1, 2, 3], name="xxx")
+        tm.assert_index_equal(result, expected)
+        tm.assert_categorical_equal(result.values, expected.values)
+
+        # allow_fill=False
+        result = idx.take(np.array([1, 0, -1]), allow_fill=False, fill_value=True)
+        expected = pd.CategoricalIndex([2, 1, 3], name="xxx")
+        tm.assert_index_equal(result, expected)
+        tm.assert_categorical_equal(result.values, expected.values)
+
+        # object category
+        idx = pd.CategoricalIndex(
+            list("CBA"), categories=list("ABC"), ordered=True, name="xxx"
+        )
+        result = idx.take(np.array([1, 0, -1]))
+        expected = pd.CategoricalIndex(
+            list("BCA"), categories=list("ABC"), ordered=True, name="xxx"
+        )
+        tm.assert_index_equal(result, expected)
+        tm.assert_categorical_equal(result.values, expected.values)
+
+        # fill_value
+        result = idx.take(np.array([1, 0, -1]), fill_value=True)
+        expected = pd.CategoricalIndex(
+            ["B", "C", np.nan], categories=list("ABC"), ordered=True, name="xxx"
+        )
+        tm.assert_index_equal(result, expected)
+        tm.assert_categorical_equal(result.values, expected.values)
+
+        # allow_fill=False
+        result = idx.take(np.array([1, 0, -1]), allow_fill=False, fill_value=True)
+        expected = pd.CategoricalIndex(
+            list("BCA"), categories=list("ABC"), ordered=True, name="xxx"
+        )
+        tm.assert_index_equal(result, expected)
+        tm.assert_categorical_equal(result.values, expected.values)
+
+        msg = (
+            "When allow_fill=True and fill_value is not None, "
+            "all indices must be >= -1"
+        )
+        with pytest.raises(ValueError, match=msg):
+            idx.take(np.array([1, 0, -2]), fill_value=True)
+        with pytest.raises(ValueError, match=msg):
+            idx.take(np.array([1, 0, -5]), fill_value=True)
+
+        msg = "index -5 is out of bounds for (axis 0 with )?size 3"
+        with pytest.raises(IndexError, match=msg):
+            idx.take(np.array([1, -5]))
+
+    def test_take_fill_value_datetime(self):
+
+        # datetime category
+        idx = pd.DatetimeIndex(["2011-01-01", "2011-02-01", "2011-03-01"], name="xxx")
+        idx = pd.CategoricalIndex(idx)
+        result = idx.take(np.array([1, 0, -1]))
+        expected = pd.DatetimeIndex(
+            ["2011-02-01", "2011-01-01", "2011-03-01"], name="xxx"
+        )
+        expected = pd.CategoricalIndex(expected)
+        tm.assert_index_equal(result, expected)
+
+        # fill_value
+        result = idx.take(np.array([1, 0, -1]), fill_value=True)
+        expected = pd.DatetimeIndex(["2011-02-01", "2011-01-01", "NaT"], name="xxx")
+        exp_cats = pd.DatetimeIndex(["2011-01-01", "2011-02-01", "2011-03-01"])
+        expected = pd.CategoricalIndex(expected, categories=exp_cats)
+        tm.assert_index_equal(result, expected)
+
+        # allow_fill=False
+        result = idx.take(np.array([1, 0, -1]), allow_fill=False, fill_value=True)
+        expected = pd.DatetimeIndex(
+            ["2011-02-01", "2011-01-01", "2011-03-01"], name="xxx"
+        )
+        expected = pd.CategoricalIndex(expected)
+        tm.assert_index_equal(result, expected)
+
+        msg = (
+            "When allow_fill=True and fill_value is not None, "
+            "all indices must be >= -1"
+        )
+        with pytest.raises(ValueError, match=msg):
+            idx.take(np.array([1, 0, -2]), fill_value=True)
+        with pytest.raises(ValueError, match=msg):
+            idx.take(np.array([1, 0, -5]), fill_value=True)
+
+        msg = "index -5 is out of bounds for (axis 0 with )?size 3"
+        with pytest.raises(IndexError, match=msg):
+            idx.take(np.array([1, -5]))
+
+    def test_take_invalid_kwargs(self):
+        idx = pd.CategoricalIndex([1, 2, 3], name="foo")
+        indices = [1, 0, -1]
+
+        msg = r"take\(\) got an unexpected keyword argument 'foo'"
+        with pytest.raises(TypeError, match=msg):
+            idx.take(indices, foo=2)
+
+        msg = "the 'out' parameter is not supported"
+        with pytest.raises(ValueError, match=msg):
+            idx.take(indices, out=indices)
+
+        msg = "the 'mode' parameter is not supported"
+        with pytest.raises(ValueError, match=msg):
+            idx.take(indices, mode="clip")
+
+
+class TestGetLoc:
+    def test_get_loc(self):
+        # GH 12531
+        cidx1 = CategoricalIndex(list("abcde"), categories=list("edabc"))
+        idx1 = Index(list("abcde"))
+        assert cidx1.get_loc("a") == idx1.get_loc("a")
+        assert cidx1.get_loc("e") == idx1.get_loc("e")
+
+        for i in [cidx1, idx1]:
+            with pytest.raises(KeyError, match="'NOT-EXIST'"):
+                i.get_loc("NOT-EXIST")
+
+        # non-unique
+        cidx2 = CategoricalIndex(list("aacded"), categories=list("edabc"))
+        idx2 = Index(list("aacded"))
+
+        # results in bool array
+        res = cidx2.get_loc("d")
+        tm.assert_numpy_array_equal(res, idx2.get_loc("d"))
+        tm.assert_numpy_array_equal(
+            res, np.array([False, False, False, True, False, True])
+        )
+        # unique element results in scalar
+        res = cidx2.get_loc("e")
+        assert res == idx2.get_loc("e")
+        assert res == 4
+
+        for i in [cidx2, idx2]:
+            with pytest.raises(KeyError, match="'NOT-EXIST'"):
+                i.get_loc("NOT-EXIST")
+
+        # non-unique, sliceable
+        cidx3 = CategoricalIndex(list("aabbb"), categories=list("abc"))
+        idx3 = Index(list("aabbb"))
+
+        # results in slice
+        res = cidx3.get_loc("a")
+        assert res == idx3.get_loc("a")
+        assert res == slice(0, 2, None)
+
+        res = cidx3.get_loc("b")
+        assert res == idx3.get_loc("b")
+        assert res == slice(2, 5, None)
+
+        for i in [cidx3, idx3]:
+            with pytest.raises(KeyError, match="'c'"):
+                i.get_loc("c")
+
+    def test_get_loc_unique(self):
+        cidx = pd.CategoricalIndex(list("abc"))
+        result = cidx.get_loc("b")
+        assert result == 1
+
+    def test_get_loc_monotonic_nonunique(self):
+        cidx = pd.CategoricalIndex(list("abbc"))
+        result = cidx.get_loc("b")
+        expected = slice(1, 3, None)
+        assert result == expected
+
+    def test_get_loc_nonmonotonic_nonunique(self):
+        cidx = pd.CategoricalIndex(list("abcb"))
+        result = cidx.get_loc("b")
+        expected = np.array([False, True, False, True], dtype=bool)
+        tm.assert_numpy_array_equal(result, expected)
+
+
+class TestGetIndexer:
+    def test_get_indexer_base(self):
+        # Determined by cat ordering.
+        idx = CategoricalIndex(list("cab"), categories=list("cab"))
+        expected = np.arange(len(idx), dtype=np.intp)
+
+        actual = idx.get_indexer(idx)
+        tm.assert_numpy_array_equal(expected, actual)
+
+        with pytest.raises(ValueError, match="Invalid fill method"):
+            idx.get_indexer(idx, method="invalid")
+
+    def test_get_indexer_non_unique(self):
+        np.random.seed(123456789)
+
+        ci = CategoricalIndex(list("aabbca"), categories=list("cab"), ordered=False)
+        oidx = Index(np.array(ci))
+
+        for n in [1, 2, 5, len(ci)]:
+            finder = oidx[np.random.randint(0, len(ci), size=n)]
+            expected = oidx.get_indexer_non_unique(finder)[0]
+
+            actual = ci.get_indexer(finder)
+            tm.assert_numpy_array_equal(expected, actual)
+
+        # see gh-17323
+
+Repository test style notes:
+- Repository appears to use pytest-style test organization.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

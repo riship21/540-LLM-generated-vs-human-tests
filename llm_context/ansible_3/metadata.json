@@ -1,0 +1,24 @@
+{
+  "project": "ansible",
+  "bug_id": "3",
+  "slug": "ansible_3",
+  "status_final": "keep",
+  "recommended_status": "keep",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_3\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_3\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [
+    "test_distribution_version"
+  ],
+  "human_test_files": [
+    "test/units/module_utils/test_distribution_version.py"
+  ],
+  "source_file_paths": [
+    "lib/ansible/module_utils/facts/system/distribution.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"test/units/module_utils/test_distribution_version.py\"",
+  "buggy_commit": "\"70219df9056ffb1e2766f572fbe71f7a1800c9f5\"",
+  "fixed_commit": "\"9d48884e36fb4fd9551f000b87d264383de74e75\""
+}

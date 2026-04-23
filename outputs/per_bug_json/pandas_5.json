@@ -1,0 +1,227 @@
+{
+  "project": "pandas",
+  "bug_id": "5",
+  "slug": "pandas_5",
+  "bug_info": {
+    "python_version": "\"3.8.3\"",
+    "buggy_commit_id": "\"4f4282f8a7c1033fc3efe9f4eab5368a70ae5041\"",
+    "fixed_commit_id": "\"0babe10f1f3f19bb6183b6fb4cc958583c6860c8\"",
+    "test_file": "\"pandas/tests/groupby/test_function.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\pandas_5.patch",
+  "files_changed": 2,
+  "source_files_changed": 1,
+  "test_files_changed": 1,
+  "human_test_added": false,
+  "human_test_modified": true,
+  "source_files": [
+    {
+      "old_path": "pandas/core/indexes/base.py",
+      "new_path": "pandas/core/indexes/base.py",
+      "display_path": "pandas/core/indexes/base.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 4,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -3528,7 +3528,10 @@ class Index(IndexOpsMixin, PandasObject):",
+          "lines": [
+            " ",
+            "             multi_join_idx = multi_join_idx.remove_unused_levels()",
+            " ",
+            "-            return multi_join_idx, lidx, ridx",
+            "+            if return_indexers:",
+            "+                return multi_join_idx, lidx, ridx",
+            "+            else:",
+            "+                return multi_join_idx",
+            " ",
+            "         jl = list(overlap)[0]",
+            " "
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [
+    {
+      "old_path": "pandas/tests/indexes/multi/test_join.py",
+      "new_path": "pandas/tests/indexes/multi/test_join.py",
+      "display_path": "pandas/tests/indexes/multi/test_join.py",
+      "change_type": "modified",
+      "is_test_file": true,
+      "added_lines": 11,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [
+        "test_join_multi_return_indexers"
+      ],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -96,10 +96,20 @@ def test_join_multi_wrong_order():",
+          "lines": [
+            "     midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"a\", \"b\"])",
+            "     midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"b\", \"a\"])",
+            " ",
+            "-    join_idx, lidx, ridx = midx1.join(midx2, return_indexers=False)",
+            "+    join_idx, lidx, ridx = midx1.join(midx2, return_indexers=True)",
+            " ",
+            "     exp_ridx = np.array([-1, -1, -1, -1], dtype=np.intp)",
+            " ",
+            "     tm.assert_index_equal(midx1, join_idx)",
+            "     assert lidx is None",
+            "     tm.assert_numpy_array_equal(ridx, exp_ridx)",
+            "+",
+            "+",
+            "+def test_join_multi_return_indexers():",
+            "+    # GH 34074",
+            "+",
+            "+    midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4], [5, 6]], names=[\"a\", \"b\", \"c\"])",
+            "+    midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"a\", \"b\"])",
+            "+",
+            "+    result = midx1.join(midx2, return_indexers=False)",
+            "+    tm.assert_index_equal(result, midx1)"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "all_files": [
+    {
+      "old_path": "pandas/core/indexes/base.py",
+      "new_path": "pandas/core/indexes/base.py",
+      "display_path": "pandas/core/indexes/base.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 4,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -3528,7 +3528,10 @@ class Index(IndexOpsMixin, PandasObject):",
+          "lines": [
+            " ",
+            "             multi_join_idx = multi_join_idx.remove_unused_levels()",
+            " ",
+            "-            return multi_join_idx, lidx, ridx",
+            "+            if return_indexers:",
+            "+                return multi_join_idx, lidx, ridx",
+            "+            else:",
+            "+                return multi_join_idx",
+            " ",
+            "         jl = list(overlap)[0]",
+            " "
+          ]
+        }
+      ],
+      "hunk_count": 1
+    },
+    {
+      "old_path": "pandas/tests/indexes/multi/test_join.py",
+      "new_path": "pandas/tests/indexes/multi/test_join.py",
+      "display_path": "pandas/tests/indexes/multi/test_join.py",
+      "change_type": "modified",
+      "is_test_file": true,
+      "added_lines": 11,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [
+        "test_join_multi_return_indexers"
+      ],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -96,10 +96,20 @@ def test_join_multi_wrong_order():",
+          "lines": [
+            "     midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"a\", \"b\"])",
+            "     midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"b\", \"a\"])",
+            " ",
+            "-    join_idx, lidx, ridx = midx1.join(midx2, return_indexers=False)",
+            "+    join_idx, lidx, ridx = midx1.join(midx2, return_indexers=True)",
+            " ",
+            "     exp_ridx = np.array([-1, -1, -1, -1], dtype=np.intp)",
+            " ",
+            "     tm.assert_index_equal(midx1, join_idx)",
+            "     assert lidx is None",
+            "     tm.assert_numpy_array_equal(ridx, exp_ridx)",
+            "+",
+            "+",
+            "+def test_join_multi_return_indexers():",
+            "+    # GH 34074",
+            "+",
+            "+    midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4], [5, 6]], names=[\"a\", \"b\", \"c\"])",
+            "+    midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"a\", \"b\"])",
+            "+",
+            "+    result = midx1.join(midx2, return_indexers=False)",
+            "+    tm.assert_index_equal(result, midx1)"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=strong",
+  "human_tests": [
+    {
+      "source": "changed_test_file",
+      "file": "pandas/tests/indexes/multi/test_join.py",
+      "change_type": "modified",
+      "added_test_defs": [
+        "test_join_multi_return_indexers"
+      ],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [],
+      "matched_test_names": [
+        "test_join_multi_return_indexers"
+      ],
+      "extracted_functions": [
+        {
+          "name": "test_join_multi_return_indexers",
+          "qualname": "test_join_multi_return_indexers",
+          "class_name": null,
+          "start_line": 108,
+          "end_line": 115,
+          "body": "def test_join_multi_return_indexers():\n    # GH 34074\n\n    midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4], [5, 6]], names=[\"a\", \"b\", \"c\"])\n    midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"a\", \"b\"])\n\n    result = midx1.join(midx2, return_indexers=False)\n    tm.assert_index_equal(result, midx1)"
+        }
+      ],
+      "file_preview": ""
+    },
+    {
+      "source": "failing_test_reference",
+      "file": "pandas/tests/groupby/test_function.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_function"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "import builtins\nfrom io import StringIO\n\nimport numpy as np\nimport pytest\n\nfrom pandas.errors import UnsupportedFunctionCall\n\nimport pandas as pd\nfrom pandas import DataFrame, Index, MultiIndex, Series, Timestamp, date_range, isna\nimport pandas._testing as tm\nimport pandas.core.nanops as nanops\nfrom pandas.util import _test_decorators as td\n\n\n@pytest.fixture(\n    params=[np.int32, np.int64, np.float32, np.float64],\n    ids=[\"np.int32\", \"np.int64\", \"np.float32\", \"np.float64\"],\n)\ndef numpy_dtypes_for_minmax(request):\n    \"\"\"\n    Fixture of numpy dtypes with min and max values used for testing\n    cummin and cummax\n    \"\"\"\n    dtype = request.param\n    min_val = (\n        np.iinfo(dtype).min if np.dtype(dtype).kind == \"i\" else np.finfo(dtype).min\n    )\n    max_val = (\n        np.iinfo(dtype).max if np.dtype(dtype).kind == \"i\" else np.finfo(dtype).max\n    )\n\n    return (dtype, min_val, max_val)\n\n\n@pytest.mark.parametrize(\"agg_func\", [\"any\", \"all\"])\n@pytest.mark.parametrize(\"skipna\", [True, False])\n@pytest.mark.parametrize(\n    \"vals\",\n    [\n        [\"foo\", \"bar\", \"baz\"],\n        [\"foo\", \"\", \"\"],\n        [\"\", \"\", \"\"],\n        [1, 2, 3],\n        [1, 0, 0],\n        [0, 0, 0],\n        [1.0, 2.0, 3.0],\n        [1.0, 0.0, 0.0],\n        [0.0, 0.0, 0.0],\n        [True, True, True],\n        [True, False, False],\n        [False, False, False],\n        [np.nan, np.nan, np.nan],\n    ],\n)\ndef test_groupby_bool_aggs(agg_func, skipna, vals):\n    df = DataFrame({\"key\": [\"a\"] * 3 + [\"b\"] * 3, \"val\": vals * 2})\n\n    # Figure out expectation using Python builtin\n    exp = getattr(builtins, agg_func)(vals)\n\n    # edge case for missing data with skipna and 'any'\n    if skipna and all(isna(vals)) and agg_func == \"any\":\n        exp = False\n\n    exp_df = DataFrame([exp] * 2, columns=[\"val\"], index=Index([\"a\", \"b\"], name=\"key\"))\n    result = getattr(df.groupby(\"key\"), agg_func)(skipna=skipna)\n    tm.assert_frame_equal(result, exp_df)\n\n\ndef test_max_min_non_numeric():\n    # #2700\n    aa = DataFrame({\"nn\": [11, 11, 22, 22], \"ii\": [1, 2, 3, 4], \"ss\": 4 * [\"mama\"]})\n\n    result = aa.groupby(\"nn\").max()\n    assert \"ss\" in result\n\n    result = aa.groupby(\"nn\").max(numeric_only=False)\n    assert \"ss\" in result\n\n    result = aa.groupby(\"nn\").min()\n    assert \"ss\" in result\n\n    result = aa.groupby(\"nn\").min(numeric_only=False)\n    assert \"ss\" in result\n\n\ndef test_intercept_builtin_sum():\n    s = Series([1.0, 2.0, np.nan, 3.0])\n    grouped = s.groupby([0, 1, 2, 2])\n\n    result = grouped.agg(builtins.sum)\n    result2 = grouped.apply(builtins.sum)\n    expected = grouped.sum()\n    tm.assert_series_equal(result, expected)\n    tm.assert_series_equal(result2, expected)\n\n\n# @pytest.mark.parametrize(\"f\", [max, min, sum])\n# def test_builtins_apply(f):\n\n\n@pytest.mark.parametrize(\"f\", [max, min, sum])\n@pytest.mark.parametrize(\"keys\", [\"jim\", [\"jim\", \"joe\"]])  # Single key  # Multi-key\ndef test_builtins_apply(keys, f):\n    # see gh-8155\n    df = pd.DataFrame(np.random.randint(1, 50, (1000, 2)), columns=[\"jim\", \"joe\"])\n    df[\"jolie\"] = np.random.randn(1000)\n\n    fname = f.__name__\n    result = df.groupby(keys).apply(f)\n    ngroups = len(df.drop_duplicates(subset=keys))\n\n    assert_msg = f\"invalid frame shape: {result.shape} (expected ({ngroups}, 3))\"\n    assert result.shape == (ngroups, 3), assert_msg\n\n    tm.assert_frame_equal(\n        result,  # numpy's equivalent function\n        df.groupby(keys).apply(getattr(np, fname)),\n    )\n\n    if f != sum:\n        expected = df.groupby(keys).agg(fname).reset_index()\n        expected.set_index(keys, inplace=True, drop=False)\n        tm.assert_frame_equal(result, expected, check_dtype=False)\n\n    tm.assert_series_equal(getattr(result, fname)(), getattr(df, fname)())\n\n\ndef test_arg_passthru():\n    # make sure that we are passing thru kwargs\n    # to our agg functions\n\n    # GH3668\n    # GH5724\n    df = pd.DataFrame(\n        {\n            \"group\": [1, 1, 2],\n            \"int\": [1, 2, 3],\n            \"float\": [4.0, 5.0, 6.0],\n            \"string\": list(\"abc\"),\n            \"category_string\": pd.Series(list(\"abc\")).astype(\"category\"),\n            \"category_int\": [7, 8, 9],\n            \"datetime\": pd.date_range(\"20130101\", periods=3),\n            \"datetimetz\": pd.date_range(\"20130101\", periods=3, tz=\"US/Eastern\"),\n            \"timedelta\": pd.timedelta_range(\"1 s\", periods=3, freq=\"s\"),\n        },\n        columns=[\n            \"group\",\n            \"int\",\n            \"float\",\n            \"string\",\n            \"category_string\",\n            \"category_int\",\n            \"datetime\",\n            \"datetimetz\",\n            \"timedelta\",\n        ],\n    )\n\n    expected_columns_numeric = Index([\"int\", \"float\", \"category_int\"])\n\n    # mean / median\n    expected = pd.DataFrame(\n        {\n            \"category_int\": [7.5, 9],\n            \"float\": [4.5, 6.0],\n            \"timedelta\": [pd.Timedelta(\"1.5s\"), pd.Timedelta(\"3s\")],\n            \"int\": [1.5, 3],\n            \"datetime\": [\n                pd.Timestamp(\"2013-01-01 12:00:00\"),\n                pd.Timestamp(\"2013-01-03 00:00:00\"),\n            ],\n            \"datetimetz\": [\n                pd.Timestamp(\"2013-01-01 12:00:00\", tz=\"US/Eastern\"),\n                pd.Timestamp(\"2013-01-03 00:00:00\", tz=\"US/Eastern\"),\n            ],\n        },\n        index=Index([1, 2], name=\"group\"),\n        columns=[\"int\", \"float\", \"category_int\", \"datetime\", \"datetimetz\", \"timedelta\"],\n    )\n\n    for attr in [\"mean\", \"median\"]:\n        result = getattr(df.groupby(\"group\"), attr)()\n        tm.assert_index_equal(result.columns, expected_columns_numeric)\n\n        result = getattr(df.groupby(\"group\"), attr)(numeric_only=False)\n        tm.assert_frame_equal(result.reindex_like(expected), expected)\n\n    # TODO: min, max *should* handle\n    # categorical (ordered) dtype\n    expected_columns = Index(\n        [\n            \"int\",\n            \"float\",\n            \"string\",\n            \"category_int\",\n            \"datetime\",\n            \"datetimetz\",\n            \"timedelta\",\n        ]\n    )\n    for attr in [\"min\", \"max\"]:\n        result = getattr(df.groupby(\"group\"), attr)()\n        tm.assert_index_equal(result.columns, expected_columns)\n\n        result = getattr(df.groupby(\"group\"), attr)(numeric_only=False)\n        tm.assert_index_equal(result.columns, expected_columns)\n\n    expected_columns = Index(\n        [\n            \"int\",\n            \"float\",\n            \"string\",\n            \"category_string\",\n            \"category_int\",\n            \"datetime\",\n            \"datetimetz\",\n            \"timedelta\",\n        ]\n    )\n    for attr in [\"first\", \"last\"]:\n        result = getattr(df.groupby(\"group\"), attr)()\n        tm.assert_index_equal(result.columns, expected_columns)\n\n        result = getattr(df.groupby(\"group\"), attr)(numeric_only=False)\n        tm.assert_index_equal(result.columns, expected_columns)\n\n    expected_columns = Index([\"int\", \"float\", \"string\", \"category_int\", \"timedelta\"])\n\n    result = df.groupby(\"group\").sum()\n    tm.assert_index_equal(result.columns, expected_columns_numeric)\n\n    result = df.groupby(\"group\").sum(numeric_only=False)\n    tm.assert_index_equal(result.columns, expected_columns)\n\n    expected_columns = Index([\"int\", \"float\", \"category_int\"])\n    for attr in [\"prod\", \"cumprod\"]:\n        result = getattr(df.groupby(\"group\"), attr)()\n        tm.assert_index_equal(result.columns, expected_columns_numeric)\n\n        result = getattr(df.groupby(\"group\"), attr)(numeric_only=False)\n        tm.assert_index_equal(result.columns, expected_columns)\n\n    # like min, max, but don't include strings\n    expected_columns = Index(\n        [\"int\", \"float\", \"category_int\", \"datetime\", \"datetimetz\", \"timedelta\"]\n    )\n    for attr in [\"cummin\", \"cummax\"]:\n        result = getattr(df.groupby(\"group\"), attr)()\n        # GH 15561: numeric_only=False set by default like min/max\n        tm.assert_index_equal(result.columns, expected_columns)\n\n        result = getattr(df.groupby(\"group\"), attr)(numeric_only=False)\n        tm.assert_index_equal(result.columns, expected_columns)\n\n    expected_columns = Index([\"int\", \"float\", \"category_int\", \"timedelta\"])\n\n    result = getattr(df.groupby(\"group\"), \"cumsum\")()\n    tm.assert_index_equal(result.columns, expected_columns_numeric)",
+      "raw_failing_test_reference": "\"pandas/tests/groupby/test_function.py\""
+    }
+  ],
+  "human_test_names": [
+    "test_join_multi_return_indexers"
+  ],
+  "human_test_files": [
+    "pandas/tests/groupby/test_function.py",
+    "pandas/tests/indexes/multi/test_join.py"
+  ],
+  "human_test_count": 1,
+  "human_test_baseline_quality": "strong",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": true
+}

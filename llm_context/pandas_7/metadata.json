@@ -1,0 +1,22 @@
+{
+  "project": "pandas",
+  "bug_id": "7",
+  "slug": "pandas_7",
+  "status_final": "maybe",
+  "recommended_status": "maybe",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_7\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_7\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [],
+  "human_test_files": [
+    "pandas/tests/frame/indexing/test_indexing.py"
+  ],
+  "source_file_paths": [
+    "pandas/core/indexes/base.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"pandas/tests/frame/indexing/test_indexing.py\"",
+  "buggy_commit": "\"27f365d\"",
+  "fixed_commit": "\"64336ff8414f8977ff94adb9a5bc000a3a4ef454\""
+}

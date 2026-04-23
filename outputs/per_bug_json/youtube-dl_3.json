@@ -1,0 +1,106 @@
+{
+  "project": "youtube-dl",
+  "bug_id": "3",
+  "slug": "youtube-dl_3",
+  "bug_info": {
+    "python_version": "\"3.7.0\"",
+    "buggy_commit_id": "\"f5469da9e6e259c1690c7ef54f1da1c19f65036f\"",
+    "fixed_commit_id": "\"95f3f7c20a05e7ac490e768b8470b20538ef8581\"",
+    "test_file": "\"test/test_utils.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\youtube-dl_3.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "youtube_dl/utils.py",
+      "new_path": "youtube_dl/utils.py",
+      "display_path": "youtube_dl/utils.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 1,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -596,7 +596,7 @@ def unescapeHTML(s):",
+          "lines": [
+            "     assert type(s) == compat_str",
+            " ",
+            "     return re.sub(",
+            "-        r'&([^;]+;)', lambda m: _htmlentity_transform(m.group(1)), s)",
+            "+        r'&([^&;]+;)', lambda m: _htmlentity_transform(m.group(1)), s)",
+            " ",
+            " ",
+            " def get_subprocess_encoding():"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "youtube_dl/utils.py",
+      "new_path": "youtube_dl/utils.py",
+      "display_path": "youtube_dl/utils.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 1,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -596,7 +596,7 @@ def unescapeHTML(s):",
+          "lines": [
+            "     assert type(s) == compat_str",
+            " ",
+            "     return re.sub(",
+            "-        r'&([^;]+;)', lambda m: _htmlentity_transform(m.group(1)), s)",
+            "+        r'&([^&;]+;)', lambda m: _htmlentity_transform(m.group(1)), s)",
+            " ",
+            " ",
+            " def get_subprocess_encoding():"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "test/test_utils.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_utils"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "#!/usr/bin/env python\n# coding: utf-8\n\nfrom __future__ import unicode_literals\n\n# Allow direct execution\nimport os\nimport sys\nimport unittest\nsys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))\n\n\n# Various small unit tests\nimport io\nimport json\nimport xml.etree.ElementTree\n\nfrom youtube_dl.utils import (\n    age_restricted,\n    args_to_str,\n    encode_base_n,\n    clean_html,\n    date_from_str,\n    DateRange,\n    detect_exe_version,\n    determine_ext,\n    dict_get,\n    encode_compat_str,\n    encodeFilename,\n    escape_rfc3986,\n    escape_url,\n    extract_attributes,\n    ExtractorError,\n    find_xpath_attr,\n    fix_xml_ampersands,\n    get_element_by_class,\n    get_element_by_attribute,\n    get_elements_by_class,\n    get_elements_by_attribute,\n    InAdvancePagedList,\n    intlist_to_bytes,\n    is_html,\n    js_to_json,\n    limit_length,\n    mimetype2ext,\n    month_by_name,\n    multipart_encode,\n    ohdave_rsa_encrypt,\n    OnDemandPagedList,\n    orderedSet,\n    parse_age_limit,\n    parse_duration,\n    parse_filesize,\n    parse_count,\n    parse_iso8601,\n    pkcs1pad,\n    read_batch_urls,\n    sanitize_filename,\n    sanitize_path,\n    expand_path,\n    prepend_extension,\n    replace_extension,\n    remove_start,\n    remove_end,\n    remove_quotes,\n    shell_quote,\n    smuggle_url,\n    str_to_int,\n    strip_jsonp,\n    timeconvert,\n    unescapeHTML,\n    unified_strdate,\n    unified_timestamp,\n    unsmuggle_url,\n    uppercase_escape,\n    lowercase_escape,\n    url_basename,\n    base_url,\n    urljoin,\n    urlencode_postdata,\n    urshift,\n    update_url_query,\n    version_tuple,\n    xpath_with_ns,\n    xpath_element,\n    xpath_text,\n    xpath_attr,\n    render_table,\n    match_str,\n    parse_dfxp_time_expr,\n    dfxp2srt,\n    cli_option,\n    cli_valueless_option,\n    cli_bool_option,\n    parse_codecs,\n)\nfrom youtube_dl.compat import (\n    compat_chr,\n    compat_etree_fromstring,\n    compat_getenv,\n    compat_os_name,\n    compat_setenv,\n    compat_urlparse,\n    compat_parse_qs,\n)\n\n\nclass TestUtil(unittest.TestCase):\n    def test_timeconvert(self):\n        self.assertTrue(timeconvert('') is None)\n        self.assertTrue(timeconvert('bougrg') is None)\n\n    def test_sanitize_filename(self):\n        self.assertEqual(sanitize_filename('abc'), 'abc')\n        self.assertEqual(sanitize_filename('abc_d-e'), 'abc_d-e')\n\n        self.assertEqual(sanitize_filename('123'), '123')\n\n        self.assertEqual('abc_de', sanitize_filename('abc/de'))\n        self.assertFalse('/' in sanitize_filename('abc/de///'))\n\n        self.assertEqual('abc_de', sanitize_filename('abc/<>\\\\*|de'))\n        self.assertEqual('xxx', sanitize_filename('xxx/<>\\\\*|'))\n        self.assertEqual('yes no', sanitize_filename('yes? no'))\n        self.assertEqual('this - that', sanitize_filename('this: that'))\n\n        self.assertEqual(sanitize_filename('AT&T'), 'AT&T')\n        aumlaut = 'ä'\n        self.assertEqual(sanitize_filename(aumlaut), aumlaut)\n        tests = '\\u043a\\u0438\\u0440\\u0438\\u043b\\u043b\\u0438\\u0446\\u0430'\n        self.assertEqual(sanitize_filename(tests), tests)\n\n        self.assertEqual(\n            sanitize_filename('New World record at 0:12:34'),\n            'New World record at 0_12_34')\n\n        self.assertEqual(sanitize_filename('--gasdgf'), '_-gasdgf')\n        self.assertEqual(sanitize_filename('--gasdgf', is_id=True), '--gasdgf')\n        self.assertEqual(sanitize_filename('.gasdgf'), 'gasdgf')\n        self.assertEqual(sanitize_filename('.gasdgf', is_id=True), '.gasdgf')\n\n        forbidden = '\"\\0\\\\/'\n        for fc in forbidden:\n            for fbc in forbidden:\n                self.assertTrue(fbc not in sanitize_filename(fc))\n\n    def test_sanitize_filename_restricted(self):\n        self.assertEqual(sanitize_filename('abc', restricted=True), 'abc')\n        self.assertEqual(sanitize_filename('abc_d-e', restricted=True), 'abc_d-e')\n\n        self.assertEqual(sanitize_filename('123', restricted=True), '123')\n\n        self.assertEqual('abc_de', sanitize_filename('abc/de', restricted=True))\n        self.assertFalse('/' in sanitize_filename('abc/de///', restricted=True))\n\n        self.assertEqual('abc_de', sanitize_filename('abc/<>\\\\*|de', restricted=True))\n        self.assertEqual('xxx', sanitize_filename('xxx/<>\\\\*|', restricted=True))\n        self.assertEqual('yes_no', sanitize_filename('yes? no', restricted=True))\n        self.assertEqual('this_-_that', sanitize_filename('this: that', restricted=True))\n\n        tests = 'aäb\\u4e2d\\u56fd\\u7684c'\n        self.assertEqual(sanitize_filename(tests, restricted=True), 'aab_c')\n        self.assertTrue(sanitize_filename('\\xf6', restricted=True) != '')  # No empty filename\n\n        forbidden = '\"\\0\\\\/&!: \\'\\t\\n()[]{}$;`^,#'\n        for fc in forbidden:\n            for fbc in forbidden:\n                self.assertTrue(fbc not in sanitize_filename(fc, restricted=True))\n\n        # Handle a common case more neatly\n        self.assertEqual(sanitize_filename('\\u5927\\u58f0\\u5e26 - Song', restricted=True), 'Song')\n        self.assertEqual(sanitize_filename('\\u603b\\u7edf: Speech', restricted=True), 'Speech')\n        # .. but make sure the file name is never empty\n        self.assertTrue(sanitize_filename('-', restricted=True) != '')\n        self.assertTrue(sanitize_filename(':', restricted=True) != '')\n\n        self.assertEqual(sanitize_filename(\n            'ÂÃÄÀÁÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖŐØŒÙÚÛÜŰÝÞßàáâãäåæçèéêëìíîïðñòóôõöőøœùúûüűýþÿ', restricted=True),\n            'AAAAAAAECEEEEIIIIDNOOOOOOOOEUUUUUYPssaaaaaaaeceeeeiiiionooooooooeuuuuuypy')\n\n    def test_sanitize_ids(self):\n        self.assertEqual(sanitize_filename('_n_cd26wFpw', is_id=True), '_n_cd26wFpw')\n        self.assertEqual(sanitize_filename('_BD_eEpuzXw', is_id=True), '_BD_eEpuzXw')\n        self.assertEqual(sanitize_filename('N0Y__7-UOdI', is_id=True), 'N0Y__7-UOdI')\n\n    def test_sanitize_path(self):\n        if sys.platform != 'win32':\n            return\n\n        self.assertEqual(sanitize_path('abc'), 'abc')\n        self.assertEqual(sanitize_path('abc/def'), 'abc\\\\def')\n        self.assertEqual(sanitize_path('abc\\\\def'), 'abc\\\\def')\n        self.assertEqual(sanitize_path('abc|def'), 'abc#def')\n        self.assertEqual(sanitize_path('<>:\"|?*'), '#######')\n        self.assertEqual(sanitize_path('C:/abc/def'), 'C:\\\\abc\\\\def')\n        self.assertEqual(sanitize_path('C?:/abc/def'), 'C##\\\\abc\\\\def')\n\n        self.assertEqual(sanitize_path('\\\\\\\\?\\\\UNC\\\\ComputerName\\\\abc'), '\\\\\\\\?\\\\UNC\\\\ComputerName\\\\abc')\n        self.assertEqual(sanitize_path('\\\\\\\\?\\\\UNC/ComputerName/abc'), '\\\\\\\\?\\\\UNC\\\\ComputerName\\\\abc')\n\n        self.assertEqual(sanitize_path('\\\\\\\\?\\\\C:\\\\abc'), '\\\\\\\\?\\\\C:\\\\abc')\n        self.assertEqual(sanitize_path('\\\\\\\\?\\\\C:/abc'), '\\\\\\\\?\\\\C:\\\\abc')\n        self.assertEqual(sanitize_path('\\\\\\\\?\\\\C:\\\\ab?c\\\\de:f'), '\\\\\\\\?\\\\C:\\\\ab#c\\\\de#f')\n        self.assertEqual(sanitize_path('\\\\\\\\?\\\\C:\\\\abc'), '\\\\\\\\?\\\\C:\\\\abc')\n\n        self.assertEqual(\n            sanitize_path('youtube/%(uploader)s/%(autonumber)s-%(title)s-%(upload_date)s.%(ext)s'),\n            'youtube\\\\%(uploader)s\\\\%(autonumber)s-%(title)s-%(upload_date)s.%(ext)s')\n\n        self.assertEqual(\n            sanitize_path('youtube/TheWreckingYard ./00001-Not bad, Especially for Free! (1987 Yamaha 700)-20141116.mp4.part'),\n            'youtube\\\\TheWreckingYard #\\\\00001-Not bad, Especially for Free! (1987 Yamaha 700)-20141116.mp4.part')\n        self.assertEqual(sanitize_path('abc/def...'), 'abc\\\\def..#')\n        self.assertEqual(sanitize_path('abc.../def'), 'abc..#\\\\def')\n        self.assertEqual(sanitize_path('abc.../def...'), 'abc..#\\\\def..#')\n\n        self.assertEqual(sanitize_path('../abc'), '..\\\\abc')\n        self.assertEqual(sanitize_path('../../abc'), '..\\\\..\\\\abc')\n        self.assertEqual(sanitize_path('./abc'), 'abc')\n        self.assertEqual(sanitize_path('./../abc'), '..\\\\abc')\n\n    def test_expand_path(self):\n        def env(var):\n            return '%{0}%'.format(var) if sys.platform == 'win32' else '${0}'.format(var)\n\n        compat_setenv('YOUTUBE_DL_EXPATH_PATH', 'expanded')\n        self.assertEqual(expand_path(env('YOUTUBE_DL_EXPATH_PATH')), 'expanded')\n        self.assertEqual(expand_path(env('HOME')), compat_getenv('HOME'))\n        self.assertEqual(expand_path('~'), compat_getenv('HOME'))\n        self.assertEqual(\n            expand_path('~/%s' % env('YOUTUBE_DL_EXPATH_PATH')),\n            '%s/expanded' % compat_getenv('HOME'))\n\n    def test_prepend_extension(self):\n        self.assertEqual(prepend_extension('abc.ext', 'temp'), 'abc.temp.ext')\n        self.assertEqual(prepend_extension('abc.ext', 'temp', 'ext'), 'abc.temp.ext')\n        self.assertEqual(prepend_extension('abc.unexpected_ext', 'temp', 'ext'), 'abc.unexpected_ext.temp')\n        self.assertEqual(prepend_extension('abc', 'temp'), 'abc.temp')\n        self.assertEqual(prepend_extension('.abc', 'temp'), '.abc.temp')\n        self.assertEqual(prepend_extension('.abc.ext', 'temp'), '.abc.temp.ext')\n\n    def test_replace_extension(self):\n        self.assertEqual(replace_extension('abc.ext', 'temp'), 'abc.temp')\n        self.assertEqual(replace_extension('abc.ext', 'temp', 'ext'), 'abc.temp')\n        self.assertEqual(replace_extension('abc.unexpected_ext', 'temp', 'ext'), 'abc.unexpected_ext.temp')\n        self.assertEqual(replace_extension('abc', 'temp'), 'abc.temp')\n        self.assertEqual(replace_extension('.abc', 'temp'), '.abc.temp')\n        self.assertEqual(replace_extension('.abc.ext', 'temp'), '.abc.temp')\n\n    def test_remove_start(self):\n        self.assertEqual(remove_start(None, 'A - '), None)\n        self.assertEqual(remove_start('A - B', 'A - '), 'B')\n        self.assertEqual(remove_start('B - A', 'A - '), 'B - A')\n\n    def test_remove_end(self):\n        self.assertEqual(remove_end(None, ' - B'), None)\n        self.assertEqual(remove_end('A - B', ' - B'), 'A')\n        self.assertEqual(remove_end('B - A', ' - B'), 'B - A')\n\n    def test_remove_quotes(self):",
+      "raw_failing_test_reference": "\"test/test_utils.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "test/test_utils.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

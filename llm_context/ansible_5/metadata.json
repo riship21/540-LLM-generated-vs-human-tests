@@ -1,0 +1,27 @@
+{
+  "project": "ansible",
+  "bug_id": "5",
+  "slug": "ansible_5",
+  "status_final": "keep",
+  "recommended_status": "keep",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_5\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_5\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 1,
+  "human_test_names": [
+    "test_check_required_arguments"
+  ],
+  "human_test_files": [
+    "test/units/module_utils/common/validation/test_check_mutually_exclusive.py",
+    "test/units/module_utils/common/validation/test_check_required_arguments.py"
+  ],
+  "source_file_paths": [
+    "lib/ansible/module_utils/common/validation.py"
+  ],
+  "test_file_paths": [
+    "test/units/module_utils/common/validation/test_check_mutually_exclusive.py"
+  ],
+  "failing_tests": "\"test/units/module_utils/common/validation/test_check_required_arguments.py\"",
+  "buggy_commit": "\"2af76f16be8cf2239daaec4c2f31c3dcb4e3469e\"",
+  "fixed_commit": "\"3c3ffc09c203d1b2262f6a319cceadd727749761\""
+}

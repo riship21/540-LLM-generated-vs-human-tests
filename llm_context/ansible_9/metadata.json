@@ -1,0 +1,22 @@
+{
+  "project": "ansible",
+  "bug_id": "9",
+  "slug": "ansible_9",
+  "status_final": "maybe",
+  "recommended_status": "maybe",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_9\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_9\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/modules/packaging/os/test_redhat_subscription.py"
+  ],
+  "source_file_paths": [
+    "lib/ansible/modules/packaging/os/redhat_subscription.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"test/units/modules/packaging/os/test_redhat_subscription.py\"",
+  "buggy_commit": "\"9276dd2007a73172ed99ab5a56cded4298d3cd2b\"",
+  "fixed_commit": "\"6f1bb37feb81acd99157f5ba0933fecd747015a2\""
+}

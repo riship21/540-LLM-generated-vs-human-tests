@@ -1,0 +1,49 @@
+### FILE: youtube_dl/utils.py
+1681:     'R': 16,
+1682:     'NC': 18,
+1683: }
+1684: 
+1685: 
+1686: def parse_age_limit(s):
+1687:     if s is None:
+1688:         return None
+1689:     m = re.match(r'^(?P<age>\d{1,2})\+?$', s)
+1690:     return int(m.group('age')) if m else US_RATINGS.get(s, None)
+1691: 
+1692: 
+1693: def strip_jsonp(code):
+1694:     return re.sub(
+1695:         r'(?s)^[a-zA-Z0-9_]+\s*\(\s*(.*)\);?\s*?(?://[^\n]*)*$', r'\1', code)
+1696: 
+1697: 
+1698: def js_to_json(code):
+1699:     def fix_kv(m):
+1700:         v = m.group(0)
+1701:         if v in ('true', 'false', 'null'):
+1702:             return v
+1703:         if v.startswith('"'):
+1704:             return v
+1705:         if v.startswith("'"):
+1706:             v = v[1:-1]
+1707:             v = re.sub(r"\\\\|\\'|\"", lambda m: {
+1708:                 '\\\\': '\\\\',
+1709:                 "\\'": "'",
+1710:                 '"': '\\"',
+1711:             }[m.group(0)], v)
+1712:         return '"%s"' % v
+1713: 
+1714:     res = re.sub(r'''(?x)
+1715:         "(?:[^"\\]*(?:\\\\|\\['"nu]))*[^"\\]*"|
+1716:         '(?:[^'\\]*(?:\\\\|\\['"nu]))*[^'\\]*'|
+1717:         [a-zA-Z_][.a-zA-Z_0-9]*
+1718:         ''', fix_kv, code)
+1719:     res = re.sub(r',(\s*[\]}])', lambda m: m.group(1), res)
+1720:     return res
+1721: 
+1722: 
+1723: def qualities(quality_ids):
+1724:     """ Get a numeric quality value out of a list of possible values """
+1725:     def q(qid):
+1726:         try:
+1727:             return quality_ids.index(qid)
+1728:         except ValueError:

@@ -1,0 +1,48 @@
+### FILE: pandas/core/internals/blocks.py
+1579: 
+1580:     def should_store(self, value: ArrayLike) -> bool:
+1581:         """
+1582:         Can we set the given array-like value inplace?
+1583:         """
+1584:         return isinstance(value, self._holder)
+1585: 
+1586:     def set(self, locs, values):
+1587:         assert locs.tolist() == [0]
+1588:         self.values[:] = values
+1589: 
+1590:     def putmask(
+1591:         self, mask, new, inplace: bool = False, axis: int = 0, transpose: bool = False,
+1592:     ) -> List["Block"]:
+1593:         """
+1594:         See Block.putmask.__doc__
+1595:         """
+1596:         inplace = validate_bool_kwarg(inplace, "inplace")
+1597: 
+1598:         mask = _extract_bool_array(mask)
+1599: 
+1600:         new_values = self.values if inplace else self.values.copy()
+1601: 
+1602:         if isinstance(new, np.ndarray) and len(new) == len(mask):
+1603:             new = new[mask]
+1604: 
+1605:         mask = _safe_reshape(mask, new_values.shape)
+1606: 
+1607:         new_values[mask] = new
+1608:         return [self.make_block(values=new_values)]
+1609: 
+1610:     def _maybe_coerce_values(self, values):
+1611:         """
+1612:         Unbox to an extension array.
+1613: 
+1614:         This will unbox an ExtensionArray stored in an Index or Series.
+1615:         ExtensionArrays pass through. No dtype coercion is done.
+1616: 
+1617:         Parameters
+1618:         ----------
+1619:         values : Index, Series, ExtensionArray
+1620: 
+1621:         Returns
+1622:         -------
+1623:         ExtensionArray
+1624:         """
+1625:         return extract_array(values)

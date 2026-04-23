@@ -1,0 +1,48 @@
+### FILE: youtube_dl/utils.py
+576:     if mobj is not None:
+577:         numstr = mobj.group(1)
+578:         if numstr.startswith('x'):
+579:             base = 16
+580:             numstr = '0%s' % numstr
+581:         else:
+582:             base = 10
+583:         # See https://github.com/rg3/youtube-dl/issues/7518
+584:         try:
+585:             return compat_chr(int(numstr, base))
+586:         except ValueError:
+587:             pass
+588: 
+589:     # Unknown entity in name, return its literal representation
+590:     return '&%s;' % entity
+591: 
+592: 
+593: def unescapeHTML(s):
+594:     if s is None:
+595:         return None
+596:     assert type(s) == compat_str
+597: 
+598:     return re.sub(
+599:         r'&([^;]+;)', lambda m: _htmlentity_transform(m.group(1)), s)
+600: 
+601: 
+602: def get_subprocess_encoding():
+603:     if sys.platform == 'win32' and sys.getwindowsversion()[0] >= 5:
+604:         # For subprocess calls, encode with locale encoding
+605:         # Refer to http://stackoverflow.com/a/9951851/35070
+606:         encoding = preferredencoding()
+607:     else:
+608:         encoding = sys.getfilesystemencoding()
+609:     if encoding is None:
+610:         encoding = 'utf-8'
+611:     return encoding
+612: 
+613: 
+614: def encodeFilename(s, for_subprocess=False):
+615:     """
+616:     @param s The name of the file
+617:     """
+618: 
+619:     assert type(s) == compat_str
+620: 
+621:     # Python 3 has a Unicode API
+622:     if sys.version_info >= (3, 0):

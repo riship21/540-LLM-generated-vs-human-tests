@@ -1,0 +1,157 @@
+{
+  "project": "ansible",
+  "bug_id": "8",
+  "slug": "ansible_8",
+  "bug_info": {
+    "python_version": "\"3.6.9\"",
+    "pythonpath": "\"ansible/build/lib/\"",
+    "buggy_commit_id": "\"81378b3e744cd0d13b33d18a4f8a38aeb8a6e97a\"",
+    "fixed_commit_id": "\"fc7980af9a42676913b4054163570ee438b82e9c\"",
+    "test_file": "\"test/units/plugins/shell/test_powershell.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\ansible_8.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "lib/ansible/plugins/shell/powershell.py",
+      "new_path": "lib/ansible/plugins/shell/powershell.py",
+      "display_path": "lib/ansible/plugins/shell/powershell.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 8,
+      "deleted_lines": 8,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -22,6 +22,7 @@ import re",
+          "lines": [
+            " import shlex",
+            " import pkgutil",
+            " import xml.etree.ElementTree as ET",
+            "+import ntpath",
+            " ",
+            " from ansible.errors import AnsibleError",
+            " from ansible.module_utils._text import to_bytes, to_text"
+          ]
+        },
+        {
+          "header": "@@ -93,14 +94,13 @@ class ShellModule(ShellBase):",
+          "lines": [
+            "         return \"\"",
+            " ",
+            "     def join_path(self, *args):",
+            "-        parts = []",
+            "-        for arg in args:",
+            "-            arg = self._unquote(arg).replace('/', '\\\\')",
+            "-            parts.extend([a for a in arg.split('\\\\') if a])",
+            "-        path = '\\\\'.join(parts)",
+            "-        if path.startswith('~'):",
+            "-            return path",
+            "-        return path",
+            "+        # use normpath() to remove doubled slashed and convert forward to backslashes",
+            "+        parts = [ntpath.normpath(self._unquote(arg)) for arg in args]",
+            "+",
+            "+        # Becuase ntpath.join treats any component that begins with a backslash as an absolute path,",
+            "+        # we have to strip slashes from at least the beginning, otherwise join will ignore all previous",
+            "+        # path components except for the drive.",
+            "+        return ntpath.join(parts[0], *[part.strip('\\\\') for part in parts[1:]])",
+            " ",
+            "     def get_remote_filename(self, pathname):",
+            "         # powershell requires that script files end with .ps1"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "lib/ansible/plugins/shell/powershell.py",
+      "new_path": "lib/ansible/plugins/shell/powershell.py",
+      "display_path": "lib/ansible/plugins/shell/powershell.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 8,
+      "deleted_lines": 8,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -22,6 +22,7 @@ import re",
+          "lines": [
+            " import shlex",
+            " import pkgutil",
+            " import xml.etree.ElementTree as ET",
+            "+import ntpath",
+            " ",
+            " from ansible.errors import AnsibleError",
+            " from ansible.module_utils._text import to_bytes, to_text"
+          ]
+        },
+        {
+          "header": "@@ -93,14 +94,13 @@ class ShellModule(ShellBase):",
+          "lines": [
+            "         return \"\"",
+            " ",
+            "     def join_path(self, *args):",
+            "-        parts = []",
+            "-        for arg in args:",
+            "-            arg = self._unquote(arg).replace('/', '\\\\')",
+            "-            parts.extend([a for a in arg.split('\\\\') if a])",
+            "-        path = '\\\\'.join(parts)",
+            "-        if path.startswith('~'):",
+            "-            return path",
+            "-        return path",
+            "+        # use normpath() to remove doubled slashed and convert forward to backslashes",
+            "+        parts = [ntpath.normpath(self._unquote(arg)) for arg in args]",
+            "+",
+            "+        # Becuase ntpath.join treats any component that begins with a backslash as an absolute path,",
+            "+        # we have to strip slashes from at least the beginning, otherwise join will ignore all previous",
+            "+        # path components except for the drive.",
+            "+        return ntpath.join(parts[0], *[part.strip('\\\\') for part in parts[1:]])",
+            " ",
+            "     def get_remote_filename(self, pathname):",
+            "         # powershell requires that script files end with .ps1"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=none",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "test/units/plugins/shell/test_powershell.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_powershell"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "",
+      "raw_failing_test_reference": "\"test/units/plugins/shell/test_powershell.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/plugins/shell/test_powershell.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "none",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

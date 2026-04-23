@@ -1,0 +1,197 @@
+{
+  "project": "ansible",
+  "bug_id": "6",
+  "slug": "ansible_6",
+  "bug_info": {
+    "python_version": "\"3.6.9\"",
+    "pythonpath": "\"ansible/build/lib/\"",
+    "buggy_commit_id": "\"90898132e456ee1993db99a1531379f1b98ee915\"",
+    "fixed_commit_id": "\"4881af2e7e0506ada0225fd764e874e20569d5b2\"",
+    "test_file": "\"test/units/galaxy/test_collection_install.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\ansible_6.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "lib/ansible/galaxy/collection.py",
+      "new_path": "lib/ansible/galaxy/collection.py",
+      "display_path": "lib/ansible/galaxy/collection.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 17,
+      "deleted_lines": 8,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -219,12 +219,15 @@ class CollectionRequirement:",
+          "lines": [
+            "                 requirement = req",
+            "                 op = operator.eq",
+            " ",
+            "-                # In the case we are checking a new requirement on a base requirement (parent != None) we can't accept",
+            "-                # version as '*' (unknown version) unless the requirement is also '*'.",
+            "-                if parent and version == '*' and requirement != '*':",
+            "-                    break",
+            "-                elif requirement == '*' or version == '*':",
+            "-                    continue",
+            "+            # In the case we are checking a new requirement on a base requirement (parent != None) we can't accept",
+            "+            # version as '*' (unknown version) unless the requirement is also '*'.",
+            "+            if parent and version == '*' and requirement != '*':",
+            "+                display.warning(\"Failed to validate the collection requirement '%s:%s' for %s when the existing \"",
+            "+                                \"install does not have a version set, the collection may not work.\"",
+            "+                                % (to_text(self), req, parent))",
+            "+                continue",
+            "+            elif requirement == '*' or version == '*':",
+            "+                continue",
+            " ",
+            "             if not op(LooseVersion(version), LooseVersion(requirement)):",
+            "                 break"
+          ]
+        },
+        {
+          "header": "@@ -286,7 +289,13 @@ class CollectionRequirement:",
+          "lines": [
+            "             manifest = info['manifest_file']['collection_info']",
+            "             namespace = manifest['namespace']",
+            "             name = manifest['name']",
+            "-            version = manifest['version']",
+            "+            version = to_text(manifest['version'], errors='surrogate_or_strict')",
+            "+",
+            "+            if not hasattr(LooseVersion(version), 'version'):",
+            "+                display.warning(\"Collection at '%s' does not have a valid version set, falling back to '*'. Found \"",
+            "+                                \"version: '%s'\" % (to_text(b_path), version))",
+            "+                version = '*'",
+            "+",
+            "             dependencies = manifest['dependencies']",
+            "         else:",
+            "             display.warning(\"Collection at '%s' does not have a MANIFEST.json file, cannot detect version.\""
+          ]
+        },
+        {
+          "header": "@@ -877,7 +886,7 @@ def _get_collection_info(dep_map, existing_collections, collection, requirement,",
+          "lines": [
+            "     existing = [c for c in existing_collections if to_text(c) == to_text(collection_info)]",
+            "     if existing and not collection_info.force:",
+            "         # Test that the installed collection fits the requirement",
+            "-        existing[0].add_requirement(to_text(collection_info), requirement)",
+            "+        existing[0].add_requirement(parent, requirement)",
+            "         collection_info = existing[0]",
+            " ",
+            "     dep_map[to_text(collection_info)] = collection_info"
+          ]
+        }
+      ],
+      "hunk_count": 3
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "lib/ansible/galaxy/collection.py",
+      "new_path": "lib/ansible/galaxy/collection.py",
+      "display_path": "lib/ansible/galaxy/collection.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 17,
+      "deleted_lines": 8,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -219,12 +219,15 @@ class CollectionRequirement:",
+          "lines": [
+            "                 requirement = req",
+            "                 op = operator.eq",
+            " ",
+            "-                # In the case we are checking a new requirement on a base requirement (parent != None) we can't accept",
+            "-                # version as '*' (unknown version) unless the requirement is also '*'.",
+            "-                if parent and version == '*' and requirement != '*':",
+            "-                    break",
+            "-                elif requirement == '*' or version == '*':",
+            "-                    continue",
+            "+            # In the case we are checking a new requirement on a base requirement (parent != None) we can't accept",
+            "+            # version as '*' (unknown version) unless the requirement is also '*'.",
+            "+            if parent and version == '*' and requirement != '*':",
+            "+                display.warning(\"Failed to validate the collection requirement '%s:%s' for %s when the existing \"",
+            "+                                \"install does not have a version set, the collection may not work.\"",
+            "+                                % (to_text(self), req, parent))",
+            "+                continue",
+            "+            elif requirement == '*' or version == '*':",
+            "+                continue",
+            " ",
+            "             if not op(LooseVersion(version), LooseVersion(requirement)):",
+            "                 break"
+          ]
+        },
+        {
+          "header": "@@ -286,7 +289,13 @@ class CollectionRequirement:",
+          "lines": [
+            "             manifest = info['manifest_file']['collection_info']",
+            "             namespace = manifest['namespace']",
+            "             name = manifest['name']",
+            "-            version = manifest['version']",
+            "+            version = to_text(manifest['version'], errors='surrogate_or_strict')",
+            "+",
+            "+            if not hasattr(LooseVersion(version), 'version'):",
+            "+                display.warning(\"Collection at '%s' does not have a valid version set, falling back to '*'. Found \"",
+            "+                                \"version: '%s'\" % (to_text(b_path), version))",
+            "+                version = '*'",
+            "+",
+            "             dependencies = manifest['dependencies']",
+            "         else:",
+            "             display.warning(\"Collection at '%s' does not have a MANIFEST.json file, cannot detect version.\""
+          ]
+        },
+        {
+          "header": "@@ -877,7 +886,7 @@ def _get_collection_info(dep_map, existing_collections, collection, requirement,",
+          "lines": [
+            "     existing = [c for c in existing_collections if to_text(c) == to_text(collection_info)]",
+            "     if existing and not collection_info.force:",
+            "         # Test that the installed collection fits the requirement",
+            "-        existing[0].add_requirement(to_text(collection_info), requirement)",
+            "+        existing[0].add_requirement(parent, requirement)",
+            "         collection_info = existing[0]",
+            " ",
+            "     dep_map[to_text(collection_info)] = collection_info"
+          ]
+        }
+      ],
+      "hunk_count": 3
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=none",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "test/units/galaxy/test_collection_install.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_collection_install"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "",
+      "raw_failing_test_reference": "\"test/units/galaxy/test_collection_install.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/galaxy/test_collection_install.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "none",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

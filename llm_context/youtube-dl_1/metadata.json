@@ -9,14 +9,14 @@
   "source_files_changed": 1,
   "test_files_changed": 0,
   "human_test_names": [],
-  "human_test_files": [],
+  "human_test_files": [
+    "test/test_utils.py"
+  ],
   "source_file_paths": [
     "youtube_dl/utils.py"
   ],
   "test_file_paths": [],
   "failing_tests": "\"test/test_utils.py\"",
-  "failing_test_names": [],
   "buggy_commit": "\"99036a1298089068dcf80c0985bfcc3f8c24f281\"",
-  "fixed_commit": "\"1cc47c667419e0eadc0a6989256ab7b276852adf\"",
-  "context_level": "rich"
+  "fixed_commit": "\"1cc47c667419e0eadc0a6989256ab7b276852adf\""
 }

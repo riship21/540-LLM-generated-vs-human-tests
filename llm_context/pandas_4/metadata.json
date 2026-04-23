@@ -1,0 +1,22 @@
+{
+  "project": "pandas",
+  "bug_id": "4",
+  "slug": "pandas_4",
+  "status_final": "maybe",
+  "recommended_status": "maybe",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_4\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_4\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [],
+  "human_test_files": [
+    "pandas/tests/indexes/multi/test_join.py"
+  ],
+  "source_file_paths": [
+    "pandas/core/indexes/base.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"pandas/tests/indexes/multi/test_join.py\"",
+  "buggy_commit": "\"cca710b\"",
+  "fixed_commit": "\"2250ddfaff92abaff20a5bcd78315f5d4bd44981\""
+}

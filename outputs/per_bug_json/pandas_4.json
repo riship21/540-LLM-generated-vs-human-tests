@@ -1,0 +1,112 @@
+{
+  "project": "pandas",
+  "bug_id": "4",
+  "slug": "pandas_4",
+  "bug_info": {
+    "python_version": "\"3.8.3\"",
+    "buggy_commit_id": "\"cca710b\"",
+    "fixed_commit_id": "\"2250ddfaff92abaff20a5bcd78315f5d4bd44981\"",
+    "test_file": "\"pandas/tests/indexes/multi/test_join.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\pandas_4.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "pandas/core/indexes/base.py",
+      "new_path": "pandas/core/indexes/base.py",
+      "display_path": "pandas/core/indexes/base.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 4,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -3528,7 +3528,10 @@ class Index(IndexOpsMixin, PandasObject):",
+          "lines": [
+            " ",
+            "             multi_join_idx = multi_join_idx.remove_unused_levels()",
+            " ",
+            "-            return multi_join_idx, lidx, ridx",
+            "+            if return_indexers:",
+            "+                return multi_join_idx, lidx, ridx",
+            "+            else:",
+            "+                return multi_join_idx",
+            " ",
+            "         jl = list(overlap)[0]",
+            " "
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "pandas/core/indexes/base.py",
+      "new_path": "pandas/core/indexes/base.py",
+      "display_path": "pandas/core/indexes/base.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 4,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -3528,7 +3528,10 @@ class Index(IndexOpsMixin, PandasObject):",
+          "lines": [
+            " ",
+            "             multi_join_idx = multi_join_idx.remove_unused_levels()",
+            " ",
+            "-            return multi_join_idx, lidx, ridx",
+            "+            if return_indexers:",
+            "+                return multi_join_idx, lidx, ridx",
+            "+            else:",
+            "+                return multi_join_idx",
+            " ",
+            "         jl = list(overlap)[0]",
+            " "
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "pandas/tests/indexes/multi/test_join.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_join"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "import numpy as np\nimport pytest\n\nimport pandas as pd\nfrom pandas import Index, MultiIndex\nimport pandas._testing as tm\n\n\n@pytest.mark.parametrize(\n    \"other\", [Index([\"three\", \"one\", \"two\"]), Index([\"one\"]), Index([\"one\", \"three\"])]\n)\ndef test_join_level(idx, other, join_type):\n    join_index, lidx, ridx = other.join(\n        idx, how=join_type, level=\"second\", return_indexers=True\n    )\n\n    exp_level = other.join(idx.levels[1], how=join_type)\n    assert join_index.levels[0].equals(idx.levels[0])\n    assert join_index.levels[1].equals(exp_level)\n\n    # pare down levels\n    mask = np.array([x[1] in exp_level for x in idx], dtype=bool)\n    exp_values = idx.values[mask]\n    tm.assert_numpy_array_equal(join_index.values, exp_values)\n\n    if join_type in (\"outer\", \"inner\"):\n        join_index2, ridx2, lidx2 = idx.join(\n            other, how=join_type, level=\"second\", return_indexers=True\n        )\n\n        assert join_index.equals(join_index2)\n        tm.assert_numpy_array_equal(lidx, lidx2)\n        tm.assert_numpy_array_equal(ridx, ridx2)\n        tm.assert_numpy_array_equal(join_index2.values, exp_values)\n\n\ndef test_join_level_corner_case(idx):\n    # some corner cases\n    index = Index([\"three\", \"one\", \"two\"])\n    result = index.join(idx, level=\"second\")\n    assert isinstance(result, MultiIndex)\n\n    with pytest.raises(TypeError, match=\"Join.*MultiIndex.*ambiguous\"):\n        idx.join(idx, level=1)\n\n\ndef test_join_self(idx, join_type):\n    joined = idx.join(idx, how=join_type)\n    assert idx is joined\n\n\ndef test_join_multi():\n    # GH 10665\n    midx = pd.MultiIndex.from_product([np.arange(4), np.arange(4)], names=[\"a\", \"b\"])\n    idx = pd.Index([1, 2, 5], name=\"b\")\n\n    # inner\n    jidx, lidx, ridx = midx.join(idx, how=\"inner\", return_indexers=True)\n    exp_idx = pd.MultiIndex.from_product([np.arange(4), [1, 2]], names=[\"a\", \"b\"])\n    exp_lidx = np.array([1, 2, 5, 6, 9, 10, 13, 14], dtype=np.intp)\n    exp_ridx = np.array([0, 1, 0, 1, 0, 1, 0, 1], dtype=np.intp)\n    tm.assert_index_equal(jidx, exp_idx)\n    tm.assert_numpy_array_equal(lidx, exp_lidx)\n    tm.assert_numpy_array_equal(ridx, exp_ridx)\n    # flip\n    jidx, ridx, lidx = idx.join(midx, how=\"inner\", return_indexers=True)\n    tm.assert_index_equal(jidx, exp_idx)\n    tm.assert_numpy_array_equal(lidx, exp_lidx)\n    tm.assert_numpy_array_equal(ridx, exp_ridx)\n\n    # keep MultiIndex\n    jidx, lidx, ridx = midx.join(idx, how=\"left\", return_indexers=True)\n    exp_ridx = np.array(\n        [-1, 0, 1, -1, -1, 0, 1, -1, -1, 0, 1, -1, -1, 0, 1, -1], dtype=np.intp\n    )\n    tm.assert_index_equal(jidx, midx)\n    assert lidx is None\n    tm.assert_numpy_array_equal(ridx, exp_ridx)\n    # flip\n    jidx, ridx, lidx = idx.join(midx, how=\"right\", return_indexers=True)\n    tm.assert_index_equal(jidx, midx)\n    assert lidx is None\n    tm.assert_numpy_array_equal(ridx, exp_ridx)\n\n\ndef test_join_self_unique(idx, join_type):\n    if idx.is_unique:\n        joined = idx.join(idx, how=join_type)\n        assert (idx == joined).all()\n\n\ndef test_join_multi_wrong_order():\n    # GH 25760\n    # GH 28956\n\n    midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"a\", \"b\"])\n    midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"b\", \"a\"])\n\n    join_idx, lidx, ridx = midx1.join(midx2, return_indexers=True)\n\n    exp_ridx = np.array([-1, -1, -1, -1], dtype=np.intp)\n\n    tm.assert_index_equal(midx1, join_idx)\n    assert lidx is None\n    tm.assert_numpy_array_equal(ridx, exp_ridx)\n\n\ndef test_join_multi_return_indexers():\n    # GH 34074\n\n    midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4], [5, 6]], names=[\"a\", \"b\", \"c\"])\n    midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=[\"a\", \"b\"])\n\n    result = midx1.join(midx2, return_indexers=False)\n    tm.assert_index_equal(result, midx1)",
+      "raw_failing_test_reference": "\"pandas/tests/indexes/multi/test_join.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "pandas/tests/indexes/multi/test_join.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

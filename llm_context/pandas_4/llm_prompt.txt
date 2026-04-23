@@ -1,0 +1,206 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: pandas
+Bug ID: 4
+Slug: pandas_4
+
+Relevant buggy source context:
+### FILE: pandas/core/indexes/base.py
+3508: 
+3509:             # Join left and right
+3510:             # Join on same leveled multi-index frames is supported
+3511:             join_idx, lidx, ridx = self_jnlevels.join(
+3512:                 other_jnlevels, how, return_indexers=True
+3513:             )
+3514: 
+3515:             # Restore the dropped levels
+3516:             # Returned index level order is
+3517:             # common levels, ldrop_names, rdrop_names
+3518:             dropped_names = ldrop_names + rdrop_names
+3519: 
+3520:             levels, codes, names = _restore_dropped_levels_multijoin(
+3521:                 self, other, dropped_names, join_idx, lidx, ridx
+3522:             )
+3523: 
+3524:             # Re-create the multi-index
+3525:             multi_join_idx = MultiIndex(
+3526:                 levels=levels, codes=codes, names=names, verify_integrity=False
+3527:             )
+3528: 
+3529:             multi_join_idx = multi_join_idx.remove_unused_levels()
+3530: 
+3531:             return multi_join_idx, lidx, ridx
+3532: 
+3533:         jl = list(overlap)[0]
+3534: 
+3535:         # Case where only one index is multi
+3536:         # make the indices into mi's that match
+3537:         flip_order = False
+3538:         if self_is_mi:
+3539:             self, other = other, self
+3540:             flip_order = True
+3541:             # flip if join method is right or left
+3542:             how = {"right": "left", "left": "right"}.get(how, how)
+3543: 
+3544:         level = other.names.index(jl)
+3545:         result = self._join_level(
+3546:             other, level, how=how, return_indexers=return_indexers
+3547:         )
+3548: 
+3549:         if flip_order:
+3550:             if isinstance(result, tuple):
+3551:                 return result[0], result[2], result[1]
+3552:         return result
+3553: 
+3554:     def _join_non_unique(self, other, how="left", return_indexers=False):
+
+Bug-fix patch:
+diff --git a/pandas/core/indexes/base.py b/pandas/core/indexes/base.py
+index 191fe5bee..b8a9827b5 100644
+--- a/pandas/core/indexes/base.py
++++ b/pandas/core/indexes/base.py
+@@ -3528,7 +3528,10 @@ class Index(IndexOpsMixin, PandasObject):
+ 
+             multi_join_idx = multi_join_idx.remove_unused_levels()
+ 
+-            return multi_join_idx, lidx, ridx
++            if return_indexers:
++                return multi_join_idx, lidx, ridx
++            else:
++                return multi_join_idx
+ 
+         jl = list(overlap)[0]
+ 
+
+
+Related human-written test context:
+### TEST FILE: pandas/tests/indexes/multi/test_join.py
+import numpy as np
+import pytest
+
+import pandas as pd
+from pandas import Index, MultiIndex
+import pandas._testing as tm
+
+
+@pytest.mark.parametrize(
+    "other", [Index(["three", "one", "two"]), Index(["one"]), Index(["one", "three"])]
+)
+def test_join_level(idx, other, join_type):
+    join_index, lidx, ridx = other.join(
+        idx, how=join_type, level="second", return_indexers=True
+    )
+
+    exp_level = other.join(idx.levels[1], how=join_type)
+    assert join_index.levels[0].equals(idx.levels[0])
+    assert join_index.levels[1].equals(exp_level)
+
+    # pare down levels
+    mask = np.array([x[1] in exp_level for x in idx], dtype=bool)
+    exp_values = idx.values[mask]
+    tm.assert_numpy_array_equal(join_index.values, exp_values)
+
+    if join_type in ("outer", "inner"):
+        join_index2, ridx2, lidx2 = idx.join(
+            other, how=join_type, level="second", return_indexers=True
+        )
+
+        assert join_index.equals(join_index2)
+        tm.assert_numpy_array_equal(lidx, lidx2)
+        tm.assert_numpy_array_equal(ridx, ridx2)
+        tm.assert_numpy_array_equal(join_index2.values, exp_values)
+
+
+def test_join_level_corner_case(idx):
+    # some corner cases
+    index = Index(["three", "one", "two"])
+    result = index.join(idx, level="second")
+    assert isinstance(result, MultiIndex)
+
+    with pytest.raises(TypeError, match="Join.*MultiIndex.*ambiguous"):
+        idx.join(idx, level=1)
+
+
+def test_join_self(idx, join_type):
+    joined = idx.join(idx, how=join_type)
+    assert idx is joined
+
+
+def test_join_multi():
+    # GH 10665
+    midx = pd.MultiIndex.from_product([np.arange(4), np.arange(4)], names=["a", "b"])
+    idx = pd.Index([1, 2, 5], name="b")
+
+    # inner
+    jidx, lidx, ridx = midx.join(idx, how="inner", return_indexers=True)
+    exp_idx = pd.MultiIndex.from_product([np.arange(4), [1, 2]], names=["a", "b"])
+    exp_lidx = np.array([1, 2, 5, 6, 9, 10, 13, 14], dtype=np.intp)
+    exp_ridx = np.array([0, 1, 0, 1, 0, 1, 0, 1], dtype=np.intp)
+    tm.assert_index_equal(jidx, exp_idx)
+    tm.assert_numpy_array_equal(lidx, exp_lidx)
+    tm.assert_numpy_array_equal(ridx, exp_ridx)
+    # flip
+    jidx, ridx, lidx = idx.join(midx, how="inner", return_indexers=True)
+    tm.assert_index_equal(jidx, exp_idx)
+    tm.assert_numpy_array_equal(lidx, exp_lidx)
+    tm.assert_numpy_array_equal(ridx, exp_ridx)
+
+    # keep MultiIndex
+    jidx, lidx, ridx = midx.join(idx, how="left", return_indexers=True)
+    exp_ridx = np.array(
+        [-1, 0, 1, -1, -1, 0, 1, -1, -1, 0, 1, -1, -1, 0, 1, -1], dtype=np.intp
+    )
+    tm.assert_index_equal(jidx, midx)
+    assert lidx is None
+    tm.assert_numpy_array_equal(ridx, exp_ridx)
+    # flip
+    jidx, ridx, lidx = idx.join(midx, how="right", return_indexers=True)
+    tm.assert_index_equal(jidx, midx)
+    assert lidx is None
+    tm.assert_numpy_array_equal(ridx, exp_ridx)
+
+
+def test_join_self_unique(idx, join_type):
+    if idx.is_unique:
+        joined = idx.join(idx, how=join_type)
+        assert (idx == joined).all()
+
+
+def test_join_multi_wrong_order():
+    # GH 25760
+    # GH 28956
+
+    midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=["a", "b"])
+    midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=["b", "a"])
+
+    join_idx, lidx, ridx = midx1.join(midx2, return_indexers=True)
+
+    exp_ridx = np.array([-1, -1, -1, -1], dtype=np.intp)
+
+    tm.assert_index_equal(midx1, join_idx)
+    assert lidx is None
+    tm.assert_numpy_array_equal(ridx, exp_ridx)
+
+
+def test_join_multi_return_indexers():
+    # GH 34074
+
+    midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4], [5, 6]], names=["a", "b", "c"])
+    midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=["a", "b"])
+
+    result = midx1.join(midx2, return_indexers=False)
+    tm.assert_index_equal(result, midx1)
+
+Repository test style notes:
+- Repository appears to use pytest-style test organization.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

@@ -1,0 +1,26 @@
+{
+  "project": "pandas",
+  "bug_id": "3",
+  "slug": "pandas_3",
+  "status_final": "keep",
+  "recommended_status": "keep",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_3\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_3\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [
+    "test_to_period",
+    "test_to_timestamp"
+  ],
+  "human_test_files": [
+    "pandas/tests/series/methods/test_to_period.py",
+    "pandas/tests/series/methods/test_to_timestamp.py"
+  ],
+  "source_file_paths": [
+    "pandas/core/series.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"pandas/tests/series/methods/test_to_period.py;pandas/tests/series/methods/test_to_timestamp.py\"",
+  "buggy_commit": "\"45fee32\"",
+  "fixed_commit": "\"d3a6a3a58e1a6eb68b8b8399ff252b8f4501950e\""
+}

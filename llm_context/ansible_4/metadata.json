@@ -1,0 +1,22 @@
+{
+  "project": "ansible",
+  "bug_id": "4",
+  "slug": "ansible_4",
+  "status_final": "maybe",
+  "recommended_status": "maybe",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_4\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_4\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/playbook/test_collectionsearch.py"
+  ],
+  "source_file_paths": [
+    "lib/ansible/playbook/collectionsearch.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"test/units/playbook/test_collectionsearch.py\"",
+  "buggy_commit": "\"d91658ec0c8434c82c3ef98bfe9eb4e1027a43a3\"",
+  "fixed_commit": "\"18a66e291dad71128a32d662aa808213acefe0e9\""
+}

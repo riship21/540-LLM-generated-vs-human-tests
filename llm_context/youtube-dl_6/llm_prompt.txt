@@ -1,0 +1,377 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: youtube-dl
+Bug ID: 6
+Slug: youtube-dl_6
+
+Relevant buggy source context:
+### FILE: youtube_dl/utils.py
+1956: 
+1957:     raise ValueError('Invalid filter part %r' % filter_part)
+1958: 
+1959: 
+1960: def match_str(filter_str, dct):
+1961:     """ Filter a dictionary with a simple string syntax. Returns True (=passes filter) or false """
+1962: 
+1963:     return all(
+1964:         _match_one(filter_part, dct) for filter_part in filter_str.split('&'))
+1965: 
+1966: 
+1967: def match_filter_func(filter_str):
+1968:     def _match_func(info_dict):
+1969:         if match_str(filter_str, info_dict):
+1970:             return None
+1971:         else:
+1972:             video_title = info_dict.get('title', info_dict.get('id', 'video'))
+1973:             return '%s does not pass filter %s, skipping ..' % (video_title, filter_str)
+1974:     return _match_func
+1975: 
+1976: 
+1977: def parse_dfxp_time_expr(time_expr):
+1978:     if not time_expr:
+1979:         return 0.0
+1980: 
+1981:     mobj = re.match(r'^(?P<time_offset>\d+(?:\.\d+)?)s?$', time_expr)
+1982:     if mobj:
+1983:         return float(mobj.group('time_offset'))
+1984: 
+1985:     mobj = re.match(r'^(\d+):(\d\d):(\d\d(?:\.\d+)?)$', time_expr)
+1986:     if mobj:
+1987:         return 3600 * int(mobj.group(1)) + 60 * int(mobj.group(2)) + float(mobj.group(3))
+1988: 
+1989: 
+1990: def srt_subtitles_timecode(seconds):
+1991:     return '%02d:%02d:%02d,%03d' % (seconds / 3600, (seconds % 3600) / 60, seconds % 60, (seconds % 1) * 1000)
+1992: 
+1993: 
+1994: def dfxp2srt(dfxp_data):
+1995:     _x = functools.partial(xpath_with_ns, ns_map={
+1996:         'ttml': 'http://www.w3.org/ns/ttml',
+1997:         'ttaf1': 'http://www.w3.org/2006/10/ttaf1',
+1998:     })
+1999: 
+2000:     def parse_node(node):
+2001:         str_or_empty = functools.partial(str_or_none, default='')
+2002: 
+
+2000:     def parse_node(node):
+2001:         str_or_empty = functools.partial(str_or_none, default='')
+2002: 
+2003:         out = str_or_empty(node.text)
+2004: 
+2005:         for child in node:
+2006:             if child.tag in (_x('ttml:br'), _x('ttaf1:br'), 'br'):
+2007:                 out += '\n' + str_or_empty(child.tail)
+2008:             elif child.tag in (_x('ttml:span'), _x('ttaf1:span'), 'span'):
+2009:                 out += str_or_empty(parse_node(child))
+2010:             else:
+2011:                 out += str_or_empty(xml.etree.ElementTree.tostring(child))
+2012: 
+2013:         return out
+2014: 
+2015:     dfxp = compat_etree_fromstring(dfxp_data.encode('utf-8'))
+2016:     out = []
+2017:     paras = dfxp.findall(_x('.//ttml:p')) or dfxp.findall(_x('.//ttaf1:p')) or dfxp.findall('.//p')
+2018: 
+2019:     if not paras:
+2020:         raise ValueError('Invalid dfxp/TTML subtitle')
+2021: 
+2022:     for para, index in zip(paras, itertools.count(1)):
+2023:         begin_time = parse_dfxp_time_expr(para.attrib['begin'])
+2024:         end_time = parse_dfxp_time_expr(para.attrib.get('end'))
+2025:         if not end_time:
+2026:             end_time = begin_time + parse_dfxp_time_expr(para.attrib['dur'])
+2027:         out.append('%d\n%s --> %s\n%s\n\n' % (
+2028:             index,
+2029:             srt_subtitles_timecode(begin_time),
+2030:             srt_subtitles_timecode(end_time),
+2031:             parse_node(para)))
+2032: 
+2033:     return ''.join(out)
+2034: 
+2035: 
+2036: def cli_option(params, command_option, param):
+2037:     param = params.get(param)
+2038:     return [command_option, param] if param is not None else []
+2039: 
+2040: 
+2041: def cli_bool_option(params, command_option, param, true_value='true', false_value='false', separator=None):
+2042:     param = params.get(param)
+2043:     assert isinstance(param, bool)
+2044:     if separator:
+2045:         return [command_option + separator + (true_value if param else false_value)]
+2046:     return [command_option, true_value if param else false_value]
+2047: 
+2048: 
+2049: def cli_valueless_option(params, command_option, param, expected_value=True):
+
+Bug-fix patch:
+diff --git a/youtube_dl/utils.py b/youtube_dl/utils.py
+index 91917fc96..ee20c3d9b 100644
+--- a/youtube_dl/utils.py
++++ b/youtube_dl/utils.py
+@@ -1976,7 +1976,7 @@ def match_filter_func(filter_str):
+ 
+ def parse_dfxp_time_expr(time_expr):
+     if not time_expr:
+-        return 0.0
++        return
+ 
+     mobj = re.match(r'^(?P<time_offset>\d+(?:\.\d+)?)s?$', time_expr)
+     if mobj:
+@@ -2020,10 +2020,15 @@ def dfxp2srt(dfxp_data):
+         raise ValueError('Invalid dfxp/TTML subtitle')
+ 
+     for para, index in zip(paras, itertools.count(1)):
+-        begin_time = parse_dfxp_time_expr(para.attrib['begin'])
++        begin_time = parse_dfxp_time_expr(para.attrib.get('begin'))
+         end_time = parse_dfxp_time_expr(para.attrib.get('end'))
++        dur = parse_dfxp_time_expr(para.attrib.get('dur'))
++        if begin_time is None:
++            continue
+         if not end_time:
+-            end_time = begin_time + parse_dfxp_time_expr(para.attrib['dur'])
++            if not dur:
++                continue
++            end_time = begin_time + dur
+         out.append('%d\n%s --> %s\n%s\n\n' % (
+             index,
+             srt_subtitles_timecode(begin_time),
+
+
+Related human-written test context:
+### TEST FILE: test/test_utils.py
+#!/usr/bin/env python
+# coding: utf-8
+
+from __future__ import unicode_literals
+
+# Allow direct execution
+import os
+import sys
+import unittest
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+# Various small unit tests
+import io
+import json
+import xml.etree.ElementTree
+
+from youtube_dl.utils import (
+    age_restricted,
+    args_to_str,
+    clean_html,
+    DateRange,
+    detect_exe_version,
+    determine_ext,
+    encodeFilename,
+    escape_rfc3986,
+    escape_url,
+    ExtractorError,
+    find_xpath_attr,
+    fix_xml_ampersands,
+    InAdvancePagedList,
+    intlist_to_bytes,
+    is_html,
+    js_to_json,
+    limit_length,
+    OnDemandPagedList,
+    orderedSet,
+    parse_duration,
+    parse_filesize,
+    parse_iso8601,
+    read_batch_urls,
+    sanitize_filename,
+    sanitize_path,
+    prepend_extension,
+    replace_extension,
+    remove_quotes,
+    shell_quote,
+    smuggle_url,
+    str_to_int,
+    strip_jsonp,
+    struct_unpack,
+    timeconvert,
+    unescapeHTML,
+    unified_strdate,
+    unsmuggle_url,
+    uppercase_escape,
+    lowercase_escape,
+    url_basename,
+    urlencode_postdata,
+    version_tuple,
+    xpath_with_ns,
+    xpath_element,
+    xpath_text,
+    xpath_attr,
+    render_table,
+    match_str,
+    parse_dfxp_time_expr,
+    dfxp2srt,
+    cli_option,
+    cli_valueless_option,
+    cli_bool_option,
+)
+from youtube_dl.compat import (
+    compat_etree_fromstring,
+)
+
+
+class TestUtil(unittest.TestCase):
+    def test_timeconvert(self):
+        self.assertTrue(timeconvert('') is None)
+        self.assertTrue(timeconvert('bougrg') is None)
+
+    def test_sanitize_filename(self):
+        self.assertEqual(sanitize_filename('abc'), 'abc')
+        self.assertEqual(sanitize_filename('abc_d-e'), 'abc_d-e')
+
+        self.assertEqual(sanitize_filename('123'), '123')
+
+        self.assertEqual('abc_de', sanitize_filename('abc/de'))
+        self.assertFalse('/' in sanitize_filename('abc/de///'))
+
+        self.assertEqual('abc_de', sanitize_filename('abc/<>\\*|de'))
+        self.assertEqual('xxx', sanitize_filename('xxx/<>\\*|'))
+        self.assertEqual('yes no', sanitize_filename('yes? no'))
+        self.assertEqual('this - that', sanitize_filename('this: that'))
+
+        self.assertEqual(sanitize_filename('AT&T'), 'AT&T')
+        aumlaut = 'ä'
+        self.assertEqual(sanitize_filename(aumlaut), aumlaut)
+        tests = '\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0446\u0430'
+        self.assertEqual(sanitize_filename(tests), tests)
+
+        self.assertEqual(
+            sanitize_filename('New World record at 0:12:34'),
+            'New World record at 0_12_34')
+
+        self.assertEqual(sanitize_filename('--gasdgf'), '_-gasdgf')
+        self.assertEqual(sanitize_filename('--gasdgf', is_id=True), '--gasdgf')
+        self.assertEqual(sanitize_filename('.gasdgf'), 'gasdgf')
+        self.assertEqual(sanitize_filename('.gasdgf', is_id=True), '.gasdgf')
+
+        forbidden = '"\0\\/'
+        for fc in forbidden:
+            for fbc in forbidden:
+                self.assertTrue(fbc not in sanitize_filename(fc))
+
+    def test_sanitize_filename_restricted(self):
+        self.assertEqual(sanitize_filename('abc', restricted=True), 'abc')
+        self.assertEqual(sanitize_filename('abc_d-e', restricted=True), 'abc_d-e')
+
+        self.assertEqual(sanitize_filename('123', restricted=True), '123')
+
+        self.assertEqual('abc_de', sanitize_filename('abc/de', restricted=True))
+        self.assertFalse('/' in sanitize_filename('abc/de///', restricted=True))
+
+        self.assertEqual('abc_de', sanitize_filename('abc/<>\\*|de', restricted=True))
+        self.assertEqual('xxx', sanitize_filename('xxx/<>\\*|', restricted=True))
+        self.assertEqual('yes_no', sanitize_filename('yes? no', restricted=True))
+        self.assertEqual('this_-_that', sanitize_filename('this: that', restricted=True))
+
+        tests = 'a\xe4b\u4e2d\u56fd\u7684c'
+        self.assertEqual(sanitize_filename(tests, restricted=True), 'a_b_c')
+        self.assertTrue(sanitize_filename('\xf6', restricted=True) != '')  # No empty filename
+
+        forbidden = '"\0\\/&!: \'\t\n()[]{}$;`^,#'
+        for fc in forbidden:
+            for fbc in forbidden:
+                self.assertTrue(fbc not in sanitize_filename(fc, restricted=True))
+
+        # Handle a common case more neatly
+        self.assertEqual(sanitize_filename('\u5927\u58f0\u5e26 - Song', restricted=True), 'Song')
+        self.assertEqual(sanitize_filename('\u603b\u7edf: Speech', restricted=True), 'Speech')
+        # .. but make sure the file name is never empty
+        self.assertTrue(sanitize_filename('-', restricted=True) != '')
+        self.assertTrue(sanitize_filename(':', restricted=True) != '')
+
+    def test_sanitize_ids(self):
+        self.assertEqual(sanitize_filename('_n_cd26wFpw', is_id=True), '_n_cd26wFpw')
+        self.assertEqual(sanitize_filename('_BD_eEpuzXw', is_id=True), '_BD_eEpuzXw')
+        self.assertEqual(sanitize_filename('N0Y__7-UOdI', is_id=True), 'N0Y__7-UOdI')
+
+    def test_sanitize_path(self):
+        if sys.platform != 'win32':
+            return
+
+        self.assertEqual(sanitize_path('abc'), 'abc')
+        self.assertEqual(sanitize_path('abc/def'), 'abc\\def')
+        self.assertEqual(sanitize_path('abc\\def'), 'abc\\def')
+        self.assertEqual(sanitize_path('abc|def'), 'abc#def')
+        self.assertEqual(sanitize_path('<>:"|?*'), '#######')
+        self.assertEqual(sanitize_path('C:/abc/def'), 'C:\\abc\\def')
+        self.assertEqual(sanitize_path('C?:/abc/def'), 'C##\\abc\\def')
+
+        self.assertEqual(sanitize_path('\\\\?\\UNC\\ComputerName\\abc'), '\\\\?\\UNC\\ComputerName\\abc')
+        self.assertEqual(sanitize_path('\\\\?\\UNC/ComputerName/abc'), '\\\\?\\UNC\\ComputerName\\abc')
+
+        self.assertEqual(sanitize_path('\\\\?\\C:\\abc'), '\\\\?\\C:\\abc')
+        self.assertEqual(sanitize_path('\\\\?\\C:/abc'), '\\\\?\\C:\\abc')
+        self.assertEqual(sanitize_path('\\\\?\\C:\\ab?c\\de:f'), '\\\\?\\C:\\ab#c\\de#f')
+        self.assertEqual(sanitize_path('\\\\?\\C:\\abc'), '\\\\?\\C:\\abc')
+
+        self.assertEqual(
+            sanitize_path('youtube/%(uploader)s/%(autonumber)s-%(title)s-%(upload_date)s.%(ext)s'),
+            'youtube\\%(uploader)s\\%(autonumber)s-%(title)s-%(upload_date)s.%(ext)s')
+
+        self.assertEqual(
+            sanitize_path('youtube/TheWreckingYard ./00001-Not bad, Especially for Free! (1987 Yamaha 700)-20141116.mp4.part'),
+            'youtube\\TheWreckingYard #\\00001-Not bad, Especially for Free! (1987 Yamaha 700)-20141116.mp4.part')
+        self.assertEqual(sanitize_path('abc/def...'), 'abc\\def..#')
+        self.assertEqual(sanitize_path('abc.../def'), 'abc..#\\def')
+        self.assertEqual(sanitize_path('abc.../def...'), 'abc..#\\def..#')
+
+        self.assertEqual(sanitize_path('../abc'), '..\\abc')
+        self.assertEqual(sanitize_path('../../abc'), '..\\..\\abc')
+        self.assertEqual(sanitize_path('./abc'), 'abc')
+        self.assertEqual(sanitize_path('./../abc'), '..\\abc')
+
+    def test_prepend_extension(self):
+        self.assertEqual(prepend_extension('abc.ext', 'temp'), 'abc.temp.ext')
+        self.assertEqual(prepend_extension('abc.ext', 'temp', 'ext'), 'abc.temp.ext')
+        self.assertEqual(prepend_extension('abc.unexpected_ext', 'temp', 'ext'), 'abc.unexpected_ext.temp')
+        self.assertEqual(prepend_extension('abc', 'temp'), 'abc.temp')
+        self.assertEqual(prepend_extension('.abc', 'temp'), '.abc.temp')
+        self.assertEqual(prepend_extension('.abc.ext', 'temp'), '.abc.temp.ext')
+
+    def test_replace_extension(self):
+        self.assertEqual(replace_extension('abc.ext', 'temp'), 'abc.temp')
+        self.assertEqual(replace_extension('abc.ext', 'temp', 'ext'), 'abc.temp')
+        self.assertEqual(replace_extension('abc.unexpected_ext', 'temp', 'ext'), 'abc.unexpected_ext.temp')
+        self.assertEqual(replace_extension('abc', 'temp'), 'abc.temp')
+        self.assertEqual(replace_extension('.abc', 'temp'), '.abc.temp')
+        self.assertEqual(replace_extension('.abc.ext', 'temp'), '.abc.temp')
+
+    def test_remove_quotes(self):
+        self.assertEqual(remove_quotes(None), None)
+        self.assertEqual(remove_quotes('"'), '"')
+        self.assertEqual(remove_quotes("'"), "'")
+        self.assertEqual(remove_quotes(';'), ';')
+        self.assertEqual(remove_quotes('";'), '";')
+        self.assertEqual(remove_quotes('""'), '')
+        self.assertEqual(remove_quotes('";"'), ';')
+
+    def test_ordered_set(self):
+        self.assertEqual(orderedSet([1, 1, 2, 3, 4, 4, 5, 6, 7, 3, 5]), [1, 2, 3, 4, 5, 6, 7])
+        self.assertEqual(orderedSet([]), [])
+        self.assertEqual(orderedSet([1]), [1])
+        # keep the list ordered
+        self.assertEqual(orderedSet([135, 1, 1, 1]), [135, 1])
+
+    def test_unescape_html(self):
+
+Repository test style notes:
+- Repository appears to use unittest-style assertions in at least some tests.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

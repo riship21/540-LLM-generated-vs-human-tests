@@ -1,0 +1,133 @@
+{
+  "project": "ansible",
+  "bug_id": "7",
+  "slug": "ansible_7",
+  "bug_info": {
+    "python_version": "\"3.6.9\"",
+    "pythonpath": "\"ansible/build/lib/\"",
+    "buggy_commit_id": "\"cd146b836e032df785ecd9eb711c6ef23c2228b8\"",
+    "fixed_commit_id": "\"4ec1437212b2fb3c313e44ed5a76b105f2151622\"",
+    "test_file": "\"test/units/modules/network/eos/test_eos_vlans.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\ansible_7.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "lib/ansible/module_utils/network/eos/config/vlans/vlans.py",
+      "new_path": "lib/ansible/module_utils/network/eos/config/vlans/vlans.py",
+      "display_path": "lib/ansible/module_utils/network/eos/config/vlans/vlans.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 5,
+      "deleted_lines": 4,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -208,16 +208,17 @@ def generate_commands(vlan_id, to_set, to_remove):",
+          "lines": [
+            "     if \"vlan_id\" in to_remove:",
+            "         return [\"no vlan {0}\".format(vlan_id)]",
+            " ",
+            "+    for key in to_remove:",
+            "+        if key in to_set.keys():",
+            "+            continue",
+            "+        commands.append(\"no {0}\".format(key))",
+            "+",
+            "     for key, value in to_set.items():",
+            "         if key == \"vlan_id\" or value is None:",
+            "             continue",
+            " ",
+            "         commands.append(\"{0} {1}\".format(key, value))",
+            " ",
+            "-    for key in to_remove:",
+            "-        commands.append(\"no {0}\".format(key))",
+            "-",
+            "     if commands:",
+            "         commands.insert(0, \"vlan {0}\".format(vlan_id))",
+            "-",
+            "     return commands"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "lib/ansible/module_utils/network/eos/config/vlans/vlans.py",
+      "new_path": "lib/ansible/module_utils/network/eos/config/vlans/vlans.py",
+      "display_path": "lib/ansible/module_utils/network/eos/config/vlans/vlans.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 5,
+      "deleted_lines": 4,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -208,16 +208,17 @@ def generate_commands(vlan_id, to_set, to_remove):",
+          "lines": [
+            "     if \"vlan_id\" in to_remove:",
+            "         return [\"no vlan {0}\".format(vlan_id)]",
+            " ",
+            "+    for key in to_remove:",
+            "+        if key in to_set.keys():",
+            "+            continue",
+            "+        commands.append(\"no {0}\".format(key))",
+            "+",
+            "     for key, value in to_set.items():",
+            "         if key == \"vlan_id\" or value is None:",
+            "             continue",
+            " ",
+            "         commands.append(\"{0} {1}\".format(key, value))",
+            " ",
+            "-    for key in to_remove:",
+            "-        commands.append(\"no {0}\".format(key))",
+            "-",
+            "     if commands:",
+            "         commands.insert(0, \"vlan {0}\".format(vlan_id))",
+            "-",
+            "     return commands"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=none",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "test/units/modules/network/eos/test_eos_vlans.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_eos_vlans"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "",
+      "raw_failing_test_reference": "\"test/units/modules/network/eos/test_eos_vlans.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/modules/network/eos/test_eos_vlans.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "none",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

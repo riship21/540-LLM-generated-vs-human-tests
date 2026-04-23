@@ -1,0 +1,311 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: youtube-dl
+Bug ID: 10
+Slug: youtube-dl_10
+
+Relevant buggy source context:
+### FILE: youtube_dl/utils.py
+1540: 
+1541: def strip_jsonp(code):
+1542:     return re.sub(
+1543:         r'(?s)^[a-zA-Z0-9_]+\s*\(\s*(.*)\);?\s*?(?://[^\n]*)*$', r'\1', code)
+1544: 
+1545: 
+1546: def js_to_json(code):
+1547:     def fix_kv(m):
+1548:         v = m.group(0)
+1549:         if v in ('true', 'false', 'null'):
+1550:             return v
+1551:         if v.startswith('"'):
+1552:             return v
+1553:         if v.startswith("'"):
+1554:             v = v[1:-1]
+1555:             v = re.sub(r"\\\\|\\'|\"", lambda m: {
+1556:                 '\\\\': '\\\\',
+1557:                 "\\'": "'",
+1558:                 '"': '\\"',
+1559:             }[m.group(0)], v)
+1560:         return '"%s"' % v
+1561: 
+1562:     res = re.sub(r'''(?x)
+1563:         "(?:[^"\\]*(?:\\\\|\\")?)*"|
+1564:         '(?:[^'\\]*(?:\\\\|\\')?)*'|
+1565:         [a-zA-Z_][.a-zA-Z_0-9]*
+1566:         ''', fix_kv, code)
+1567:     res = re.sub(r',(\s*\])', lambda m: m.group(1), res)
+1568:     return res
+1569: 
+1570: 
+1571: def qualities(quality_ids):
+1572:     """ Get a numeric quality value out of a list of possible values """
+1573:     def q(qid):
+1574:         try:
+1575:             return quality_ids.index(qid)
+1576:         except ValueError:
+1577:             return -1
+1578:     return q
+1579: 
+1580: 
+1581: DEFAULT_OUTTMPL = '%(title)s-%(id)s.%(ext)s'
+1582: 
+1583: 
+1584: def limit_length(s, length):
+1585:     """ Add ellipses to overly long strings """
+1586:     if s is None:
+1587:         return None
+
+Bug-fix patch:
+diff --git a/youtube_dl/utils.py b/youtube_dl/utils.py
+index 3eb6bc6d4..4358137a0 100644
+--- a/youtube_dl/utils.py
++++ b/youtube_dl/utils.py
+@@ -1560,8 +1560,8 @@ def js_to_json(code):
+         return '"%s"' % v
+ 
+     res = re.sub(r'''(?x)
+-        "(?:[^"\\]*(?:\\\\|\\")?)*"|
+-        '(?:[^'\\]*(?:\\\\|\\')?)*'|
++        "(?:[^"\\]*(?:\\\\|\\['"nu]))*[^"\\]*"|
++        '(?:[^'\\]*(?:\\\\|\\['"nu]))*[^'\\]*'|
+         [a-zA-Z_][.a-zA-Z_0-9]*
+         ''', fix_kv, code)
+     res = re.sub(r',(\s*\])', lambda m: m.group(1), res)
+
+
+Related human-written test context:
+### TEST FILE: test/test_utils.py
+#!/usr/bin/env python
+# coding: utf-8
+
+from __future__ import unicode_literals
+
+# Allow direct execution
+import os
+import sys
+import unittest
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+# Various small unit tests
+import io
+import json
+import xml.etree.ElementTree
+
+from youtube_dl.utils import (
+    age_restricted,
+    args_to_str,
+    clean_html,
+    DateRange,
+    detect_exe_version,
+    encodeFilename,
+    escape_rfc3986,
+    escape_url,
+    find_xpath_attr,
+    fix_xml_ampersands,
+    InAdvancePagedList,
+    intlist_to_bytes,
+    is_html,
+    js_to_json,
+    limit_length,
+    OnDemandPagedList,
+    orderedSet,
+    parse_duration,
+    parse_filesize,
+    parse_iso8601,
+    read_batch_urls,
+    sanitize_filename,
+    shell_quote,
+    smuggle_url,
+    str_to_int,
+    strip_jsonp,
+    struct_unpack,
+    timeconvert,
+    unescapeHTML,
+    unified_strdate,
+    unsmuggle_url,
+    uppercase_escape,
+    url_basename,
+    urlencode_postdata,
+    version_tuple,
+    xpath_with_ns,
+    render_table,
+    match_str,
+)
+
+
+class TestUtil(unittest.TestCase):
+    def test_timeconvert(self):
+        self.assertTrue(timeconvert('') is None)
+        self.assertTrue(timeconvert('bougrg') is None)
+
+    def test_sanitize_filename(self):
+        self.assertEqual(sanitize_filename('abc'), 'abc')
+        self.assertEqual(sanitize_filename('abc_d-e'), 'abc_d-e')
+
+        self.assertEqual(sanitize_filename('123'), '123')
+
+        self.assertEqual('abc_de', sanitize_filename('abc/de'))
+        self.assertFalse('/' in sanitize_filename('abc/de///'))
+
+        self.assertEqual('abc_de', sanitize_filename('abc/<>\\*|de'))
+        self.assertEqual('xxx', sanitize_filename('xxx/<>\\*|'))
+        self.assertEqual('yes no', sanitize_filename('yes? no'))
+        self.assertEqual('this - that', sanitize_filename('this: that'))
+
+        self.assertEqual(sanitize_filename('AT&T'), 'AT&T')
+        aumlaut = 'ä'
+        self.assertEqual(sanitize_filename(aumlaut), aumlaut)
+        tests = '\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0446\u0430'
+        self.assertEqual(sanitize_filename(tests), tests)
+
+        self.assertEqual(
+            sanitize_filename('New World record at 0:12:34'),
+            'New World record at 0_12_34')
+
+        forbidden = '"\0\\/'
+        for fc in forbidden:
+            for fbc in forbidden:
+                self.assertTrue(fbc not in sanitize_filename(fc))
+
+    def test_sanitize_filename_restricted(self):
+        self.assertEqual(sanitize_filename('abc', restricted=True), 'abc')
+        self.assertEqual(sanitize_filename('abc_d-e', restricted=True), 'abc_d-e')
+
+        self.assertEqual(sanitize_filename('123', restricted=True), '123')
+
+        self.assertEqual('abc_de', sanitize_filename('abc/de', restricted=True))
+        self.assertFalse('/' in sanitize_filename('abc/de///', restricted=True))
+
+        self.assertEqual('abc_de', sanitize_filename('abc/<>\\*|de', restricted=True))
+        self.assertEqual('xxx', sanitize_filename('xxx/<>\\*|', restricted=True))
+        self.assertEqual('yes_no', sanitize_filename('yes? no', restricted=True))
+        self.assertEqual('this_-_that', sanitize_filename('this: that', restricted=True))
+
+        tests = 'a\xe4b\u4e2d\u56fd\u7684c'
+        self.assertEqual(sanitize_filename(tests, restricted=True), 'a_b_c')
+        self.assertTrue(sanitize_filename('\xf6', restricted=True) != '')  # No empty filename
+
+        forbidden = '"\0\\/&!: \'\t\n()[]{}$;`^,#'
+        for fc in forbidden:
+            for fbc in forbidden:
+                self.assertTrue(fbc not in sanitize_filename(fc, restricted=True))
+
+        # Handle a common case more neatly
+        self.assertEqual(sanitize_filename('\u5927\u58f0\u5e26 - Song', restricted=True), 'Song')
+        self.assertEqual(sanitize_filename('\u603b\u7edf: Speech', restricted=True), 'Speech')
+        # .. but make sure the file name is never empty
+        self.assertTrue(sanitize_filename('-', restricted=True) != '')
+        self.assertTrue(sanitize_filename(':', restricted=True) != '')
+
+    def test_sanitize_ids(self):
+        self.assertEqual(sanitize_filename('_n_cd26wFpw', is_id=True), '_n_cd26wFpw')
+        self.assertEqual(sanitize_filename('_BD_eEpuzXw', is_id=True), '_BD_eEpuzXw')
+        self.assertEqual(sanitize_filename('N0Y__7-UOdI', is_id=True), 'N0Y__7-UOdI')
+
+    def test_ordered_set(self):
+        self.assertEqual(orderedSet([1, 1, 2, 3, 4, 4, 5, 6, 7, 3, 5]), [1, 2, 3, 4, 5, 6, 7])
+        self.assertEqual(orderedSet([]), [])
+        self.assertEqual(orderedSet([1]), [1])
+        # keep the list ordered
+        self.assertEqual(orderedSet([135, 1, 1, 1]), [135, 1])
+
+    def test_unescape_html(self):
+        self.assertEqual(unescapeHTML('%20;'), '%20;')
+        self.assertEqual(
+            unescapeHTML('&eacute;'), 'é')
+
+    def test_daterange(self):
+        _20century = DateRange("19000101", "20000101")
+        self.assertFalse("17890714" in _20century)
+        _ac = DateRange("00010101")
+        self.assertTrue("19690721" in _ac)
+        _firstmilenium = DateRange(end="10000101")
+        self.assertTrue("07110427" in _firstmilenium)
+
+    def test_unified_dates(self):
+        self.assertEqual(unified_strdate('December 21, 2010'), '20101221')
+        self.assertEqual(unified_strdate('8/7/2009'), '20090708')
+        self.assertEqual(unified_strdate('Dec 14, 2012'), '20121214')
+        self.assertEqual(unified_strdate('2012/10/11 01:56:38 +0000'), '20121011')
+        self.assertEqual(unified_strdate('1968 12 10'), '19681210')
+        self.assertEqual(unified_strdate('1968-12-10'), '19681210')
+        self.assertEqual(unified_strdate('28/01/2014 21:00:00 +0100'), '20140128')
+        self.assertEqual(
+            unified_strdate('11/26/2014 11:30:00 AM PST', day_first=False),
+            '20141126')
+        self.assertEqual(
+            unified_strdate('2/2/2015 6:47:40 PM', day_first=False),
+            '20150202')
+
+    def test_find_xpath_attr(self):
+        testxml = '''<root>
+            <node/>
+            <node x="a"/>
+            <node x="a" y="c" />
+            <node x="b" y="d" />
+        </root>'''
+        doc = xml.etree.ElementTree.fromstring(testxml)
+
+        self.assertEqual(find_xpath_attr(doc, './/fourohfour', 'n', 'v'), None)
+        self.assertEqual(find_xpath_attr(doc, './/node', 'x', 'a'), doc[1])
+        self.assertEqual(find_xpath_attr(doc, './/node', 'y', 'c'), doc[2])
+
+    def test_xpath_with_ns(self):
+        testxml = '''<root xmlns:media="http://example.com/">
+            <media:song>
+                <media:author>The Author</media:author>
+                <url>http://server.com/download.mp3</url>
+            </media:song>
+        </root>'''
+        doc = xml.etree.ElementTree.fromstring(testxml)
+        find = lambda p: doc.find(xpath_with_ns(p, {'media': 'http://example.com/'}))
+        self.assertTrue(find('media:song') is not None)
+        self.assertEqual(find('media:song/media:author').text, 'The Author')
+        self.assertEqual(find('media:song/url').text, 'http://server.com/download.mp3')
+
+    def test_smuggle_url(self):
+        data = {"ö": "ö", "abc": [3]}
+        url = 'https://foo.bar/baz?x=y#a'
+        smug_url = smuggle_url(url, data)
+        unsmug_url, unsmug_data = unsmuggle_url(smug_url)
+        self.assertEqual(url, unsmug_url)
+        self.assertEqual(data, unsmug_data)
+
+        res_url, res_data = unsmuggle_url(url)
+        self.assertEqual(res_url, url)
+        self.assertEqual(res_data, None)
+
+    def test_shell_quote(self):
+        args = ['ffmpeg', '-i', encodeFilename('ñ€ß\'.mp4')]
+        self.assertEqual(shell_quote(args), """ffmpeg -i 'ñ€ß'"'"'.mp4'""")
+
+    def test_str_to_int(self):
+        self.assertEqual(str_to_int('123,456'), 123456)
+        self.assertEqual(str_to_int('123.456'), 123456)
+
+    def test_url_basename(self):
+        self.assertEqual(url_basename('http://foo.de/'), '')
+        self.assertEqual(url_basename('http://foo.de/bar/baz'), 'baz')
+        self.assertEqual(url_basename('http://foo.de/bar/baz?x=y'), 'baz')
+        self.assertEqual(url_basename('http://foo.de/bar/baz#x=y'), 'baz')
+        self.assertEqual(url_basename('http://foo.de/bar/baz/'), 'baz')
+        self.assertEqual(
+            url_basename('http://media.w3.org/2010/05/sintel/trailer.mp4'),
+            'trailer.mp4')
+
+    def test_parse_duration(self):
+
+Repository test style notes:
+- Repository appears to use unittest-style assertions in at least some tests.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

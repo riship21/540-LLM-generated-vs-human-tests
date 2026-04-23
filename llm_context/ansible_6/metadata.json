@@ -1,0 +1,22 @@
+{
+  "project": "ansible",
+  "bug_id": "6",
+  "slug": "ansible_6",
+  "status_final": "maybe",
+  "recommended_status": "maybe",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_6\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_6\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/galaxy/test_collection_install.py"
+  ],
+  "source_file_paths": [
+    "lib/ansible/galaxy/collection.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"test/units/galaxy/test_collection_install.py\"",
+  "buggy_commit": "\"90898132e456ee1993db99a1531379f1b98ee915\"",
+  "fixed_commit": "\"4881af2e7e0506ada0225fd764e874e20569d5b2\""
+}

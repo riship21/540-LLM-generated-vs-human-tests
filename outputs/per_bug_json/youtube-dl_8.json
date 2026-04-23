@@ -1,0 +1,108 @@
+{
+  "project": "youtube-dl",
+  "bug_id": "8",
+  "slug": "youtube-dl_8",
+  "bug_info": {
+    "python_version": "\"3.7.0\"",
+    "buggy_commit_id": "\"cf2ac6df6896dac4d23918867bb86fac1e1088d9\"",
+    "fixed_commit_id": "\"f5f4a27a964b41646303921104f4d6d6fd2098e4\"",
+    "test_file": "\"test/test_YoutubeDL.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\youtube-dl_8.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "youtube_dl/YoutubeDL.py",
+      "new_path": "youtube_dl/YoutubeDL.py",
+      "display_path": "youtube_dl/YoutubeDL.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 1,
+      "deleted_lines": 2,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -958,8 +958,7 @@ class YoutubeDL(object):",
+          "lines": [
+            "                     elif string == '/':",
+            "                         first_choice = current_selector",
+            "                         second_choice = _parse_format_selection(tokens, inside_choice=True)",
+            "-                        current_selector = None",
+            "-                        selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))",
+            "+                        current_selector = FormatSelector(PICKFIRST, (first_choice, second_choice), [])",
+            "                     elif string == '[':",
+            "                         if not current_selector:",
+            "                             current_selector = FormatSelector(SINGLE, 'best', [])"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "youtube_dl/YoutubeDL.py",
+      "new_path": "youtube_dl/YoutubeDL.py",
+      "display_path": "youtube_dl/YoutubeDL.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 1,
+      "deleted_lines": 2,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -958,8 +958,7 @@ class YoutubeDL(object):",
+          "lines": [
+            "                     elif string == '/':",
+            "                         first_choice = current_selector",
+            "                         second_choice = _parse_format_selection(tokens, inside_choice=True)",
+            "-                        current_selector = None",
+            "-                        selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))",
+            "+                        current_selector = FormatSelector(PICKFIRST, (first_choice, second_choice), [])",
+            "                     elif string == '[':",
+            "                         if not current_selector:",
+            "                             current_selector = FormatSelector(SINGLE, 'best', [])"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "test/test_YoutubeDL.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_YoutubeDL"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "#!/usr/bin/env python\n\nfrom __future__ import unicode_literals\n\n# Allow direct execution\nimport os\nimport sys\nimport unittest\nsys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))\n\nimport copy\n\nfrom test.helper import FakeYDL, assertRegexpMatches\nfrom youtube_dl import YoutubeDL\nfrom youtube_dl.compat import compat_str\nfrom youtube_dl.extractor import YoutubeIE\nfrom youtube_dl.postprocessor.common import PostProcessor\nfrom youtube_dl.utils import match_filter_func\n\nTEST_URL = 'http://localhost/sample.mp4'\n\n\nclass YDL(FakeYDL):\n    def __init__(self, *args, **kwargs):\n        super(YDL, self).__init__(*args, **kwargs)\n        self.downloaded_info_dicts = []\n        self.msgs = []\n\n    def process_info(self, info_dict):\n        self.downloaded_info_dicts.append(info_dict)\n\n    def to_screen(self, msg):\n        self.msgs.append(msg)\n\n\ndef _make_result(formats, **kwargs):\n    res = {\n        'formats': formats,\n        'id': 'testid',\n        'title': 'testttitle',\n        'extractor': 'testex',\n    }\n    res.update(**kwargs)\n    return res\n\n\nclass TestFormatSelection(unittest.TestCase):\n    def test_prefer_free_formats(self):\n        # Same resolution => download webm\n        ydl = YDL()\n        ydl.params['prefer_free_formats'] = True\n        formats = [\n            {'ext': 'webm', 'height': 460, 'url': TEST_URL},\n            {'ext': 'mp4', 'height': 460, 'url': TEST_URL},\n        ]\n        info_dict = _make_result(formats)\n        yie = YoutubeIE(ydl)\n        yie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(info_dict)\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['ext'], 'webm')\n\n        # Different resolution => download best quality (mp4)\n        ydl = YDL()\n        ydl.params['prefer_free_formats'] = True\n        formats = [\n            {'ext': 'webm', 'height': 720, 'url': TEST_URL},\n            {'ext': 'mp4', 'height': 1080, 'url': TEST_URL},\n        ]\n        info_dict['formats'] = formats\n        yie = YoutubeIE(ydl)\n        yie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(info_dict)\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['ext'], 'mp4')\n\n        # No prefer_free_formats => prefer mp4 and flv for greater compatibility\n        ydl = YDL()\n        ydl.params['prefer_free_formats'] = False\n        formats = [\n            {'ext': 'webm', 'height': 720, 'url': TEST_URL},\n            {'ext': 'mp4', 'height': 720, 'url': TEST_URL},\n            {'ext': 'flv', 'height': 720, 'url': TEST_URL},\n        ]\n        info_dict['formats'] = formats\n        yie = YoutubeIE(ydl)\n        yie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(info_dict)\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['ext'], 'mp4')\n\n        ydl = YDL()\n        ydl.params['prefer_free_formats'] = False\n        formats = [\n            {'ext': 'flv', 'height': 720, 'url': TEST_URL},\n            {'ext': 'webm', 'height': 720, 'url': TEST_URL},\n        ]\n        info_dict['formats'] = formats\n        yie = YoutubeIE(ydl)\n        yie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(info_dict)\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['ext'], 'flv')\n\n    def test_format_selection(self):\n        formats = [\n            {'format_id': '35', 'ext': 'mp4', 'preference': 1, 'url': TEST_URL},\n            {'format_id': '45', 'ext': 'webm', 'preference': 2, 'url': TEST_URL},\n            {'format_id': '47', 'ext': 'webm', 'preference': 3, 'url': TEST_URL},\n            {'format_id': '2', 'ext': 'flv', 'preference': 4, 'url': TEST_URL},\n        ]\n        info_dict = _make_result(formats)\n\n        ydl = YDL({'format': '20/47'})\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], '47')\n\n        ydl = YDL({'format': '20/71/worst'})\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], '35')\n\n        ydl = YDL()\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], '2')\n\n        ydl = YDL({'format': 'webm/mp4'})\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], '47')\n\n        ydl = YDL({'format': '3gp/40/mp4'})\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], '35')\n\n    def test_format_selection_audio(self):\n        formats = [\n            {'format_id': 'audio-low', 'ext': 'webm', 'preference': 1, 'vcodec': 'none', 'url': TEST_URL},\n            {'format_id': 'audio-mid', 'ext': 'webm', 'preference': 2, 'vcodec': 'none', 'url': TEST_URL},\n            {'format_id': 'audio-high', 'ext': 'flv', 'preference': 3, 'vcodec': 'none', 'url': TEST_URL},\n            {'format_id': 'vid', 'ext': 'mp4', 'preference': 4, 'url': TEST_URL},\n        ]\n        info_dict = _make_result(formats)\n\n        ydl = YDL({'format': 'bestaudio'})\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], 'audio-high')\n\n        ydl = YDL({'format': 'worstaudio'})\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], 'audio-low')\n\n        formats = [\n            {'format_id': 'vid-low', 'ext': 'mp4', 'preference': 1, 'url': TEST_URL},\n            {'format_id': 'vid-high', 'ext': 'mp4', 'preference': 2, 'url': TEST_URL},\n        ]\n        info_dict = _make_result(formats)\n\n        ydl = YDL({'format': 'bestaudio/worstaudio/best'})\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], 'vid-high')\n\n    def test_format_selection_audio_exts(self):\n        formats = [\n            {'format_id': 'mp3-64', 'ext': 'mp3', 'abr': 64, 'url': 'http://_', 'vcodec': 'none'},\n            {'format_id': 'ogg-64', 'ext': 'ogg', 'abr': 64, 'url': 'http://_', 'vcodec': 'none'},\n            {'format_id': 'aac-64', 'ext': 'aac', 'abr': 64, 'url': 'http://_', 'vcodec': 'none'},\n            {'format_id': 'mp3-32', 'ext': 'mp3', 'abr': 32, 'url': 'http://_', 'vcodec': 'none'},\n            {'format_id': 'aac-32', 'ext': 'aac', 'abr': 32, 'url': 'http://_', 'vcodec': 'none'},\n        ]\n\n        info_dict = _make_result(formats)\n        ydl = YDL({'format': 'best'})\n        ie = YoutubeIE(ydl)\n        ie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(copy.deepcopy(info_dict))\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], 'aac-64')\n\n        ydl = YDL({'format': 'mp3'})\n        ie = YoutubeIE(ydl)\n        ie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(copy.deepcopy(info_dict))\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], 'mp3-64')\n\n        ydl = YDL({'prefer_free_formats': True})\n        ie = YoutubeIE(ydl)\n        ie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(copy.deepcopy(info_dict))\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], 'ogg-64')\n\n    def test_format_selection_video(self):\n        formats = [\n            {'format_id': 'dash-video-low', 'ext': 'mp4', 'preference': 1, 'acodec': 'none', 'url': TEST_URL},\n            {'format_id': 'dash-video-high', 'ext': 'mp4', 'preference': 2, 'acodec': 'none', 'url': TEST_URL},\n            {'format_id': 'vid', 'ext': 'mp4', 'preference': 3, 'url': TEST_URL},\n        ]\n        info_dict = _make_result(formats)\n\n        ydl = YDL({'format': 'bestvideo'})\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], 'dash-video-high')\n\n        ydl = YDL({'format': 'worstvideo'})\n        ydl.process_ie_result(info_dict.copy())\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], 'dash-video-low')\n\n    def test_youtube_format_selection(self):\n        order = [\n            '38', '37', '46', '22', '45', '35', '44', '18', '34', '43', '6', '5', '36', '17', '13',\n            # Apple HTTP Live Streaming\n            '96', '95', '94', '93', '92', '132', '151',\n            # 3D\n            '85', '84', '102', '83', '101', '82', '100',\n            # Dash video\n            '137', '248', '136', '247', '135', '246',\n            '245', '244', '134', '243', '133', '242', '160',\n            # Dash audio\n            '141', '172', '140', '171', '139',\n        ]\n\n        def format_info(f_id):\n            info = YoutubeIE._formats[f_id].copy()\n            info['format_id'] = f_id\n            info['url'] = 'url:' + f_id\n            return info\n        formats_order = [format_info(f_id) for f_id in order]\n\n        info_dict = _make_result(list(formats_order), extractor='youtube')\n        ydl = YDL({'format': 'bestvideo+bestaudio'})\n        yie = YoutubeIE(ydl)\n        yie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(info_dict)\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], '137+141')\n        self.assertEqual(downloaded['ext'], 'mp4')\n\n        info_dict = _make_result(list(formats_order), extractor='youtube')\n        ydl = YDL({'format': 'bestvideo[height>=999999]+bestaudio/best'})\n        yie = YoutubeIE(ydl)\n        yie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(info_dict)\n        downloaded = ydl.downloaded_info_dicts[0]\n        self.assertEqual(downloaded['format_id'], '38')\n\n        info_dict = _make_result(list(formats_order), extractor='youtube')\n        ydl = YDL({'format': 'bestvideo/best,bestaudio'})\n        yie = YoutubeIE(ydl)\n        yie._sort_formats(info_dict['formats'])\n        ydl.process_ie_result(info_dict)",
+      "raw_failing_test_reference": "\"test/test_YoutubeDL.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "test/test_YoutubeDL.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

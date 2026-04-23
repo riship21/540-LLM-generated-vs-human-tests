@@ -1,0 +1,220 @@
+{
+  "project": "pandas",
+  "bug_id": "9",
+  "slug": "pandas_9",
+  "bug_info": {
+    "python_version": "\"3.8.3\"",
+    "buggy_commit_id": "\"c557ab5\"",
+    "fixed_commit_id": "\"ebb727e5cd8865a7f5d6cfb4b22d3278b6bf5e6b\"",
+    "test_file": "\"pandas/tests/indexes/categorical/test_indexing.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\pandas_9.patch",
+  "files_changed": 2,
+  "source_files_changed": 2,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "pandas/core/arrays/categorical.py",
+      "new_path": "pandas/core/arrays/categorical.py",
+      "display_path": "pandas/core/arrays/categorical.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 2,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -37,7 +37,7 @@ from pandas.core.dtypes.common import (",
+          "lines": [
+            " from pandas.core.dtypes.dtypes import CategoricalDtype",
+            " from pandas.core.dtypes.generic import ABCIndexClass, ABCSeries",
+            " from pandas.core.dtypes.inference import is_hashable",
+            "-from pandas.core.dtypes.missing import isna, notna",
+            "+from pandas.core.dtypes.missing import is_valid_nat_for_dtype, isna, notna",
+            " ",
+            " from pandas.core import ops",
+            " from pandas.core.accessor import PandasDelegate, delegate_names"
+          ]
+        },
+        {
+          "header": "@@ -1834,7 +1834,7 @@ class Categorical(NDArrayBackedExtensionArray, PandasObject):",
+          "lines": [
+            "         Returns True if `key` is in this Categorical.",
+            "         \"\"\"",
+            "         # if key is a NaN, check if any NaN is in self.",
+            "-        if is_scalar(key) and isna(key):",
+            "+        if is_valid_nat_for_dtype(key, self.categories.dtype):",
+            "             return self.isna().any()",
+            " ",
+            "         return contains(self, key, container=self._codes)"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    },
+    {
+      "old_path": "pandas/core/indexes/category.py",
+      "new_path": "pandas/core/indexes/category.py",
+      "display_path": "pandas/core/indexes/category.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 3,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -19,7 +19,7 @@ from pandas.core.dtypes.common import (",
+          "lines": [
+            "     is_scalar,",
+            " )",
+            " from pandas.core.dtypes.dtypes import CategoricalDtype",
+            "-from pandas.core.dtypes.missing import isna",
+            "+from pandas.core.dtypes.missing import is_valid_nat_for_dtype, isna",
+            " ",
+            " from pandas.core import accessor",
+            " from pandas.core.algorithms import take_1d"
+          ]
+        },
+        {
+          "header": "@@ -365,10 +365,9 @@ class CategoricalIndex(ExtensionIndex, accessor.PandasDelegate):",
+          "lines": [
+            "     @doc(Index.__contains__)",
+            "     def __contains__(self, key: Any) -> bool:",
+            "         # if key is a NaN, check if any NaN is in self.",
+            "-        if is_scalar(key) and isna(key):",
+            "+        if is_valid_nat_for_dtype(key, self.categories.dtype):",
+            "             return self.hasnans",
+            " ",
+            "-        hash(key)",
+            "         return contains(self, key, container=self._engine)",
+            " ",
+            "     @doc(Index.astype)"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "pandas/core/arrays/categorical.py",
+      "new_path": "pandas/core/arrays/categorical.py",
+      "display_path": "pandas/core/arrays/categorical.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 2,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -37,7 +37,7 @@ from pandas.core.dtypes.common import (",
+          "lines": [
+            " from pandas.core.dtypes.dtypes import CategoricalDtype",
+            " from pandas.core.dtypes.generic import ABCIndexClass, ABCSeries",
+            " from pandas.core.dtypes.inference import is_hashable",
+            "-from pandas.core.dtypes.missing import isna, notna",
+            "+from pandas.core.dtypes.missing import is_valid_nat_for_dtype, isna, notna",
+            " ",
+            " from pandas.core import ops",
+            " from pandas.core.accessor import PandasDelegate, delegate_names"
+          ]
+        },
+        {
+          "header": "@@ -1834,7 +1834,7 @@ class Categorical(NDArrayBackedExtensionArray, PandasObject):",
+          "lines": [
+            "         Returns True if `key` is in this Categorical.",
+            "         \"\"\"",
+            "         # if key is a NaN, check if any NaN is in self.",
+            "-        if is_scalar(key) and isna(key):",
+            "+        if is_valid_nat_for_dtype(key, self.categories.dtype):",
+            "             return self.isna().any()",
+            " ",
+            "         return contains(self, key, container=self._codes)"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    },
+    {
+      "old_path": "pandas/core/indexes/category.py",
+      "new_path": "pandas/core/indexes/category.py",
+      "display_path": "pandas/core/indexes/category.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 3,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -19,7 +19,7 @@ from pandas.core.dtypes.common import (",
+          "lines": [
+            "     is_scalar,",
+            " )",
+            " from pandas.core.dtypes.dtypes import CategoricalDtype",
+            "-from pandas.core.dtypes.missing import isna",
+            "+from pandas.core.dtypes.missing import is_valid_nat_for_dtype, isna",
+            " ",
+            " from pandas.core import accessor",
+            " from pandas.core.algorithms import take_1d"
+          ]
+        },
+        {
+          "header": "@@ -365,10 +365,9 @@ class CategoricalIndex(ExtensionIndex, accessor.PandasDelegate):",
+          "lines": [
+            "     @doc(Index.__contains__)",
+            "     def __contains__(self, key: Any) -> bool:",
+            "         # if key is a NaN, check if any NaN is in self.",
+            "-        if is_scalar(key) and isna(key):",
+            "+        if is_valid_nat_for_dtype(key, self.categories.dtype):",
+            "             return self.hasnans",
+            " ",
+            "-        hash(key)",
+            "         return contains(self, key, container=self._engine)",
+            " ",
+            "     @doc(Index.astype)"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "pandas/tests/indexes/categorical/test_indexing.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_indexing"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "import numpy as np\nimport pytest\n\nimport pandas as pd\nfrom pandas import CategoricalIndex, Index, IntervalIndex\nimport pandas._testing as tm\n\n\nclass TestTake:\n    def test_take_fill_value(self):\n        # GH 12631\n\n        # numeric category\n        idx = pd.CategoricalIndex([1, 2, 3], name=\"xxx\")\n        result = idx.take(np.array([1, 0, -1]))\n        expected = pd.CategoricalIndex([2, 1, 3], name=\"xxx\")\n        tm.assert_index_equal(result, expected)\n        tm.assert_categorical_equal(result.values, expected.values)\n\n        # fill_value\n        result = idx.take(np.array([1, 0, -1]), fill_value=True)\n        expected = pd.CategoricalIndex([2, 1, np.nan], categories=[1, 2, 3], name=\"xxx\")\n        tm.assert_index_equal(result, expected)\n        tm.assert_categorical_equal(result.values, expected.values)\n\n        # allow_fill=False\n        result = idx.take(np.array([1, 0, -1]), allow_fill=False, fill_value=True)\n        expected = pd.CategoricalIndex([2, 1, 3], name=\"xxx\")\n        tm.assert_index_equal(result, expected)\n        tm.assert_categorical_equal(result.values, expected.values)\n\n        # object category\n        idx = pd.CategoricalIndex(\n            list(\"CBA\"), categories=list(\"ABC\"), ordered=True, name=\"xxx\"\n        )\n        result = idx.take(np.array([1, 0, -1]))\n        expected = pd.CategoricalIndex(\n            list(\"BCA\"), categories=list(\"ABC\"), ordered=True, name=\"xxx\"\n        )\n        tm.assert_index_equal(result, expected)\n        tm.assert_categorical_equal(result.values, expected.values)\n\n        # fill_value\n        result = idx.take(np.array([1, 0, -1]), fill_value=True)\n        expected = pd.CategoricalIndex(\n            [\"B\", \"C\", np.nan], categories=list(\"ABC\"), ordered=True, name=\"xxx\"\n        )\n        tm.assert_index_equal(result, expected)\n        tm.assert_categorical_equal(result.values, expected.values)\n\n        # allow_fill=False\n        result = idx.take(np.array([1, 0, -1]), allow_fill=False, fill_value=True)\n        expected = pd.CategoricalIndex(\n            list(\"BCA\"), categories=list(\"ABC\"), ordered=True, name=\"xxx\"\n        )\n        tm.assert_index_equal(result, expected)\n        tm.assert_categorical_equal(result.values, expected.values)\n\n        msg = (\n            \"When allow_fill=True and fill_value is not None, \"\n            \"all indices must be >= -1\"\n        )\n        with pytest.raises(ValueError, match=msg):\n            idx.take(np.array([1, 0, -2]), fill_value=True)\n        with pytest.raises(ValueError, match=msg):\n            idx.take(np.array([1, 0, -5]), fill_value=True)\n\n        msg = \"index -5 is out of bounds for (axis 0 with )?size 3\"\n        with pytest.raises(IndexError, match=msg):\n            idx.take(np.array([1, -5]))\n\n    def test_take_fill_value_datetime(self):\n\n        # datetime category\n        idx = pd.DatetimeIndex([\"2011-01-01\", \"2011-02-01\", \"2011-03-01\"], name=\"xxx\")\n        idx = pd.CategoricalIndex(idx)\n        result = idx.take(np.array([1, 0, -1]))\n        expected = pd.DatetimeIndex(\n            [\"2011-02-01\", \"2011-01-01\", \"2011-03-01\"], name=\"xxx\"\n        )\n        expected = pd.CategoricalIndex(expected)\n        tm.assert_index_equal(result, expected)\n\n        # fill_value\n        result = idx.take(np.array([1, 0, -1]), fill_value=True)\n        expected = pd.DatetimeIndex([\"2011-02-01\", \"2011-01-01\", \"NaT\"], name=\"xxx\")\n        exp_cats = pd.DatetimeIndex([\"2011-01-01\", \"2011-02-01\", \"2011-03-01\"])\n        expected = pd.CategoricalIndex(expected, categories=exp_cats)\n        tm.assert_index_equal(result, expected)\n\n        # allow_fill=False\n        result = idx.take(np.array([1, 0, -1]), allow_fill=False, fill_value=True)\n        expected = pd.DatetimeIndex(\n            [\"2011-02-01\", \"2011-01-01\", \"2011-03-01\"], name=\"xxx\"\n        )\n        expected = pd.CategoricalIndex(expected)\n        tm.assert_index_equal(result, expected)\n\n        msg = (\n            \"When allow_fill=True and fill_value is not None, \"\n            \"all indices must be >= -1\"\n        )\n        with pytest.raises(ValueError, match=msg):\n            idx.take(np.array([1, 0, -2]), fill_value=True)\n        with pytest.raises(ValueError, match=msg):\n            idx.take(np.array([1, 0, -5]), fill_value=True)\n\n        msg = \"index -5 is out of bounds for (axis 0 with )?size 3\"\n        with pytest.raises(IndexError, match=msg):\n            idx.take(np.array([1, -5]))\n\n    def test_take_invalid_kwargs(self):\n        idx = pd.CategoricalIndex([1, 2, 3], name=\"foo\")\n        indices = [1, 0, -1]\n\n        msg = r\"take\\(\\) got an unexpected keyword argument 'foo'\"\n        with pytest.raises(TypeError, match=msg):\n            idx.take(indices, foo=2)\n\n        msg = \"the 'out' parameter is not supported\"\n        with pytest.raises(ValueError, match=msg):\n            idx.take(indices, out=indices)\n\n        msg = \"the 'mode' parameter is not supported\"\n        with pytest.raises(ValueError, match=msg):\n            idx.take(indices, mode=\"clip\")\n\n\nclass TestGetLoc:\n    def test_get_loc(self):\n        # GH 12531\n        cidx1 = CategoricalIndex(list(\"abcde\"), categories=list(\"edabc\"))\n        idx1 = Index(list(\"abcde\"))\n        assert cidx1.get_loc(\"a\") == idx1.get_loc(\"a\")\n        assert cidx1.get_loc(\"e\") == idx1.get_loc(\"e\")\n\n        for i in [cidx1, idx1]:\n            with pytest.raises(KeyError, match=\"'NOT-EXIST'\"):\n                i.get_loc(\"NOT-EXIST\")\n\n        # non-unique\n        cidx2 = CategoricalIndex(list(\"aacded\"), categories=list(\"edabc\"))\n        idx2 = Index(list(\"aacded\"))\n\n        # results in bool array\n        res = cidx2.get_loc(\"d\")\n        tm.assert_numpy_array_equal(res, idx2.get_loc(\"d\"))\n        tm.assert_numpy_array_equal(\n            res, np.array([False, False, False, True, False, True])\n        )\n        # unique element results in scalar\n        res = cidx2.get_loc(\"e\")\n        assert res == idx2.get_loc(\"e\")\n        assert res == 4\n\n        for i in [cidx2, idx2]:\n            with pytest.raises(KeyError, match=\"'NOT-EXIST'\"):\n                i.get_loc(\"NOT-EXIST\")\n\n        # non-unique, sliceable\n        cidx3 = CategoricalIndex(list(\"aabbb\"), categories=list(\"abc\"))\n        idx3 = Index(list(\"aabbb\"))\n\n        # results in slice\n        res = cidx3.get_loc(\"a\")\n        assert res == idx3.get_loc(\"a\")\n        assert res == slice(0, 2, None)\n\n        res = cidx3.get_loc(\"b\")\n        assert res == idx3.get_loc(\"b\")\n        assert res == slice(2, 5, None)\n\n        for i in [cidx3, idx3]:\n            with pytest.raises(KeyError, match=\"'c'\"):\n                i.get_loc(\"c\")\n\n    def test_get_loc_unique(self):\n        cidx = pd.CategoricalIndex(list(\"abc\"))\n        result = cidx.get_loc(\"b\")\n        assert result == 1\n\n    def test_get_loc_monotonic_nonunique(self):\n        cidx = pd.CategoricalIndex(list(\"abbc\"))\n        result = cidx.get_loc(\"b\")\n        expected = slice(1, 3, None)\n        assert result == expected\n\n    def test_get_loc_nonmonotonic_nonunique(self):\n        cidx = pd.CategoricalIndex(list(\"abcb\"))\n        result = cidx.get_loc(\"b\")\n        expected = np.array([False, True, False, True], dtype=bool)\n        tm.assert_numpy_array_equal(result, expected)\n\n\nclass TestGetIndexer:\n    def test_get_indexer_base(self):\n        # Determined by cat ordering.\n        idx = CategoricalIndex(list(\"cab\"), categories=list(\"cab\"))\n        expected = np.arange(len(idx), dtype=np.intp)\n\n        actual = idx.get_indexer(idx)\n        tm.assert_numpy_array_equal(expected, actual)\n\n        with pytest.raises(ValueError, match=\"Invalid fill method\"):\n            idx.get_indexer(idx, method=\"invalid\")\n\n    def test_get_indexer_non_unique(self):\n        np.random.seed(123456789)\n\n        ci = CategoricalIndex(list(\"aabbca\"), categories=list(\"cab\"), ordered=False)\n        oidx = Index(np.array(ci))\n\n        for n in [1, 2, 5, len(ci)]:\n            finder = oidx[np.random.randint(0, len(ci), size=n)]\n            expected = oidx.get_indexer_non_unique(finder)[0]\n\n            actual = ci.get_indexer(finder)\n            tm.assert_numpy_array_equal(expected, actual)\n\n        # see gh-17323\n        #\n        # Even when indexer is equal to the\n        # members in the index, we should\n        # respect duplicates instead of taking\n        # the fast-track path.\n        for finder in [list(\"aabbca\"), list(\"aababca\")]:\n            expected = oidx.get_indexer_non_unique(finder)[0]\n\n            actual = ci.get_indexer(finder)\n            tm.assert_numpy_array_equal(expected, actual)\n\n    def test_get_indexer(self):\n\n        idx1 = CategoricalIndex(list(\"aabcde\"), categories=list(\"edabc\"))\n        idx2 = CategoricalIndex(list(\"abf\"))\n\n        for indexer in [idx2, list(\"abf\"), Index(list(\"abf\"))]:\n            r1 = idx1.get_indexer(idx2)\n            tm.assert_almost_equal(r1, np.array([0, 1, 2, -1], dtype=np.intp))\n\n        msg = (\n            \"method='pad' and method='backfill' not implemented yet for \"\n            \"CategoricalIndex\"\n        )\n        with pytest.raises(NotImplementedError, match=msg):\n            idx2.get_indexer(idx1, method=\"pad\")\n        with pytest.raises(NotImplementedError, match=msg):\n            idx2.get_indexer(idx1, method=\"backfill\")\n\n        msg = \"method='nearest' not implemented yet for CategoricalIndex\"\n        with pytest.raises(NotImplementedError, match=msg):\n            idx2.get_indexer(idx1, method=\"nearest\")\n\n\nclass TestWhere:\n    @pytest.mark.parametrize(\"klass\", [list, tuple, np.array, pd.Series])\n    def test_where(self, klass):\n        i = CategoricalIndex(list(\"aabbca\"), categories=list(\"cab\"), ordered=False)\n        cond = [True] * len(i)\n        expected = i",
+      "raw_failing_test_reference": "\"pandas/tests/indexes/categorical/test_indexing.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "pandas/tests/indexes/categorical/test_indexing.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

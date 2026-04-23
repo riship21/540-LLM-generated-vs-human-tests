@@ -1,0 +1,54 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: ansible
+Bug ID: 9
+Slug: ansible_9
+
+Relevant buggy source context:
+(no Python source context extracted)
+
+Bug-fix patch:
+diff --git a/lib/ansible/modules/packaging/os/redhat_subscription.py b/lib/ansible/modules/packaging/os/redhat_subscription.py
+index bc0bcc3ee7..d3cca7beb0 100644
+--- a/lib/ansible/modules/packaging/os/redhat_subscription.py
++++ b/lib/ansible/modules/packaging/os/redhat_subscription.py
+@@ -515,7 +515,9 @@ class Rhsm(RegistrationBase):
+ 
+         for pool_id, quantity in sorted(pool_ids.items()):
+             if pool_id in available_pool_ids:
+-                args = [SUBMAN_CMD, 'attach', '--pool', pool_id, '--quantity', quantity]
++                args = [SUBMAN_CMD, 'attach', '--pool', pool_id]
++                if quantity is not None:
++                    args.extend(['--quantity', to_native(quantity)])
+                 rc, stderr, stdout = self.module.run_command(args, check_rc=True)
+             else:
+                 self.module.fail_json(msg='Pool ID: %s not in list of available pools' % pool_id)
+@@ -839,8 +841,8 @@ def main():
+                 module.fail_json(msg='Unable to parse pool_ids option.')
+             pool_id, quantity = list(value.items())[0]
+         else:
+-            pool_id, quantity = value, 1
+-        pool_ids[pool_id] = str(quantity)
++            pool_id, quantity = value, None
++        pool_ids[pool_id] = quantity
+     consumer_type = module.params["consumer_type"]
+     consumer_name = module.params["consumer_name"]
+     consumer_id = module.params["consumer_id"]
+
+
+Related human-written test context:
+(no human test context extracted)
+
+Repository test style notes:
+- Follow the existing repository test style visible in the provided examples.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

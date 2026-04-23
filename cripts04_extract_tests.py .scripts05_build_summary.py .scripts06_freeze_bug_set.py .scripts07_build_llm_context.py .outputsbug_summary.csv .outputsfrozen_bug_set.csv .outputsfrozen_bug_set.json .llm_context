@@ -1,0 +1,302 @@
+warning: in the working copy of 'scripts/04_extract_tests.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/05_build_summary.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/07_build_llm_context.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/scripts/04_extract_tests.py b/scripts/04_extract_tests.py[m
+[1mindex bd69e57..2f49b33 100644[m
+[1m--- a/scripts/04_extract_tests.py[m
+[1m+++ b/scripts/04_extract_tests.py[m
+[36m@@ -1,81 +1,321 @@[m
+ from __future__ import annotations[m
+ [m
+ import argparse[m
+[32m+[m[32mimport ast[m
+[32m+[m[32mimport re[m
+ from pathlib import Path[m
+[32m+[m[32mfrom typing import Any[m
+ [m
+[31m-from common import extract_python_test_functions, read_json, slugify_bug, write_json[m
+[32m+[m[32mfrom common import read_json, safe_read_text, slugify_bug, write_json[m
+ [m
+[32m+[m[32mPY_PATH_RE = re.compile(r'([A-Za-z0-9_./\\-]+\.py)')[m
+[32m+[m[32mPYTEST_NODE_RE = re.compile(r'([A-Za-z0-9_./\\-]+\.py)(?:::{1,2}([A-Za-z0-9_\.]+))?')[m
+[32m+[m[32mTEST_NAME_RE = re.compile(r'(?<![A-Za-z0-9_])(test_[A-Za-z0-9_]+)')[m
+ [m
+[31m-def locate_repo_root(checkout_parent: Path) -> Path:[m
+[32m+[m
+[32m+[m[32mdef locate_repo_root(checkout_parent: Path | None) -> Path | None:[m
+[32m+[m[32m    if not checkout_parent or not checkout_parent.exists():[m
+[32m+[m[32m        return None[m
+     candidates = [p for p in checkout_parent.iterdir() if p.is_dir()][m
+     if len(candidates) == 1:[m
+         return candidates[0][m
+     return checkout_parent[m
+ [m
+ [m
+[31m-def main() -> None:[m
+[31m-    parser = argparse.ArgumentParser(description="Extract human-written test metadata from changed test files.")[m
+[31m-    parser.add_argument([m
+[31m-        "--per-bug-dir",[m
+[31m-        type=Path,[m
+[31m-        default=Path("outputs/per_bug_json"),[m
+[31m-        help="Directory with per-bug JSON files from step 03",[m
+[31m-    )[m
+[31m-    parser.add_argument([m
+[31m-        "--checkout-manifest",[m
+[31m-        type=Path,[m
+[31m-        default=Path("outputs/checkout_manifest.json"),[m
+[31m-        help="Checkout manifest from step 02",[m
+[32m+[m[32mdef normalize_repo_path(text: str) -> str:[m
+[32m+[m[32m    return text.strip().strip('"\'').replace('\\', '/')[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef parse_failing_test_refs(raw: str) -> list[dict[str, Any]]:[m
+[32m+[m[32m    """Extract file/test references from BugsInPy bug.info failing test fields.[m
+[32m+[m
+[32m+[m[32m    Returns entries like:[m
+[32m+[m[32m      {"file": "pandas/tests/test_x.py", "raw": "...", "requested_tests": ["test_foo", "TestBar.test_baz"]}[m
+[32m+[m[32m    """[m
+[32m+[m[32m    if not raw:[m
+[32m+[m[32m        return [][m
+[32m+[m
+[32m+[m[32m    refs: dict[str, dict[str, Any]] = {}[m
+[32m+[m[32m    text = raw.strip()[m
+[32m+[m
+[32m+[m[32m    # First capture pytest-style node ids with optional ::TestClass::test_name[m
+[32m+[m[32m    for m in PYTEST_NODE_RE.finditer(text):[m
+[32m+[m[32m        file_path = normalize_repo_path(m.group(1))[m
+[32m+[m[32m        suffix = (m.group(2) or '').strip(':')[m
+[32m+[m[32m        requested_tests: list[str] = [][m
+[32m+[m[32m        if suffix:[m
+[32m+[m[32m            requested_tests.append(suffix)[m
+[32m+[m[32m            last = suffix.split('.')[-1].split('::')[-1][m
+[32m+[m[32m            if last.startswith('test_'):[m
+[32m+[m[32m                requested_tests.append(last)[m
+[32m+[m[32m        ref = refs.setdefault(file_path, {"file": file_path, "raw": text, "requested_tests": []})[m
+[32m+[m[32m        ref["requested_tests"].extend(requested_tests)[m
+[32m+[m
+[32m+[m[32m    # Fallback: any .py path in the command/text[m
+[32m+[m[32m    for m in PY_PATH_RE.finditer(text):[m
+[32m+[m[32m        file_path = normalize_repo_path(m.group(1))[m
+[32m+[m[32m        refs.setdefault(file_path, {"file": file_path, "raw": text, "requested_tests": []})[m
+[32m+[m
+[32m+[m[32m    # Also collect explicit test_... names mentioned anywhere in the command[m
+[32m+[m[32m    names = sorted(set(TEST_NAME_RE.findall(text)))[m
+[32m+[m[32m    if names and refs:[m
+[32m+[m[32m        for ref in refs.values():[m
+[32m+[m[32m            ref["requested_tests"].extend(names)[m
+[32m+[m
+[32m+[m[32m    cleaned: list[dict[str, Any]] = [][m
+[32m+[m[32m    for ref in refs.values():[m
+[32m+[m[32m        uniq = [][m
+[32m+[m[32m        seen = set()[m
+[32m+[m[32m        for item in ref["requested_tests"]:[m
+[32m+[m[32m            k = item.strip()[m
+[32m+[m[32m            if k and k not in seen:[m
+[32m+[m[32m                seen.add(k)[m
+[32m+[m[32m                uniq.append(k)[m
+[32m+[m[32m        ref["requested_tests"] = uniq[m
+[32m+[m[32m        cleaned.append(ref)[m
+[32m+[m[32m    return cleaned[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef extract_python_tests(file_path: Path) -> dict[str, dict[str, Any]]:[m
+[32m+[m[32m    if not file_path.exists() or file_path.suffix != '.py':[m
+[32m+[m[32m        return {}[m
+[32m+[m[32m    try:[m
+[32m+[m[32m        text = safe_read_text(file_path)[m
+[32m+[m[32m        tree = ast.parse(text)[m
+[32m+[m[32m    except Exception:[m
+[32m+[m[32m        return {}[m
+[32m+[m
+[32m+[m[32m    lines = text.splitlines()[m
+[32m+[m[32m    result: dict[str, dict[str, Any]] = {}[m
+[32m+[m
+[32m+[m[32m    class Visitor(ast.NodeVisitor):[m
+[32m+[m[32m        def __init__(self) -> None:[m
+[32m+[m[32m            self.class_stack: list[str] = [][m
+[32m+[m
+[32m+[m[32m        def visit_ClassDef(self, node: ast.ClassDef) -> Any:[m
+[32m+[m[32m            self.class_stack.append(node.name)[m
+[32m+[m[32m            self.generic_visit(node)[m
+[32m+[m[32m            self.class_stack.pop()[m
+[32m+[m
+[32m+[m[32m        def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:[m
+[32m+[m[32m            if node.name.startswith('test_'):[m
+[32m+[m[32m                start = getattr(node, 'lineno', None)[m
+[32m+[m[32m                end = getattr(node, 'end_lineno', None)[m
+[32m+[m[32m                body = ''[m
+[32m+[m[32m                if start is not None and end is not None:[m
+[32m+[m[32m                    body = '\n'.join(lines[start - 1:end])[m
+[32m+[m[32m                qualname = '.'.join(self.class_stack + [node.name]) if self.class_stack else node.name[m
+[32m+[m[32m                item = {[m
+[32m+[m[32m                    'name': node.name,[m
+[32m+[m[32m                    'qualname': qualname,[m
+[32m+[m[32m                    'class_name': self.class_stack[-1] if self.class_stack else None,[m
+[32m+[m[32m                    'start_line': start,[m
+[32m+[m[32m                    'end_line': end,[m
+[32m+[m[32m                    'body': body,[m
+[32m+[m[32m                }[m
+[32m+[m[32m                result[node.name] = item[m
+[32m+[m[32m                result[qualname] = item[m
+[32m+[m[32m            self.generic_visit(node)[m
+[32m+[m
+[32m+[m[32m    Visitor().visit(tree)[m
+[32m+[m[32m    return result[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef gather_changed_test_entries(record: dict[str, Any], fixed_repo_root: Path | None) -> list[dict[str, Any]]:[m
+[32m+[m[32m    entries: list[dict[str, Any]] = [][m
+[32m+[m[32m    for file_entry in record.get('test_files', []):[m
+[32m+[m[32m        path_in_repo = file_entry.get('display_path') or file_entry.get('new_path') or file_entry.get('old_path')[m
+[32m+[m[32m        extracted_functions = [][m
+[32m+[m[32m        function_map: dict[str, dict[str, Any]] = {}[m
+[32m+[m[32m        if fixed_repo_root and path_in_repo:[m
+[32m+[m[32m            function_map = extract_python_tests(fixed_repo_root / path_in_repo)[m
+[32m+[m
+[32m+[m[32m        candidate_names = [][m
+[32m+[m[32m        candidate_names.extend(file_entry.get('added_test_defs', []))[m
+[32m+[m[32m        candidate_names.extend(file_entry.get('deleted_test_defs', []))[m
+[32m+[m[32m        for name in candidate_names:[m
+[32m+[m[32m            fn = function_map.get(name)[m
+[32m+[m[32m            if fn and fn not in extracted_functions:[m
+[32m+[m[32m                extracted_functions.append(fn)[m
+[32m+[m
+[32m+[m[32m        if not extracted_functions and fixed_repo_root and path_in_repo:[m
+[32m+[m[32m            full_path = fixed_repo_root / path_in_repo[m
+[32m+[m[32m            if full_path.exists() and full_path.suffix == '.py':[m
+[32m+[m[32m                preview = '\n'.join(safe_read_text(full_path).splitlines()[:240])[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                preview = ''[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            preview = ''[m
+[32m+[m
+[32m+[m[32m        entries.append([m
+[32m+[m[32m            {[m
+[32m+[m[32m                'source': 'changed_test_file',[m
+[32m+[m[32m                'file': path_in_repo,[m
+[32m+[m[32m                'change_type': file_entry.get('change_type'),[m
+[32m+[m[32m                'added_test_defs': file_entry.get('added_test_defs', []),[m
+[32m+[m[32m                'deleted_test_defs': file_entry.get('deleted_test_defs', []),[m
+[32m+[m[32m                'added_assertions': file_entry.get('added_assertions', []),[m
+[32m+[m[32m                'requested_tests': [],[m
+[32m+[m[32m                'matched_test_names': sorted({fn.get('name', '') for fn in extracted_functions if fn.get('name')}),[m
+[32m+[m[32m                'extracted_functions': extracted_functions,[m
+[32m+[m[32m                'file_preview': preview,[m
+[32m+[m[32m            }[m
+[32m+[m[32m        )[m
+[32m+[m[32m    return entries[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef gather_failing_test_entries(record: dict[str, Any], fixed_repo_root: Path | None) -> list[dict[str, Any]]:[m
+[32m+[m[32m    bug_info = record.get('bug_info', {}) or {}[m
+[32m+[m[32m    raw = ([m
+[32m+[m[32m        bug_info.get('failing_test_command')[m
+[32m+[m[32m        or bug_info.get('test_file')[m
+[32m+[m[32m        or bug_info.get('failing_tests')[m
+[32m+[m[32m        or ''[m
+     )[m
+[32m+[m[32m    refs = parse_failing_test_refs(raw)[m
+[32m+[m[32m    entries: list[dict[str, Any]] = [][m
+[32m+[m
+[32m+[m[32m    for ref in refs:[m
+[32m+[m[32m        path_in_repo = ref['file'][m
+[32m+[m[32m        requested = ref.get('requested_tests', [])[m
+[32m+[m[32m        function_map: dict[str, dict[str, Any]] = {}[m
+[32m+[m[32m        matched: list[dict[str, Any]] = [][m
+[32m+[m[32m        preview = ''[m
+[32m+[m
+[32m+[m[32m        if fixed_repo_root and path_in_repo:[m
+[32m+[m[32m            full_path = fixed_repo_root / path_in_repo[m
+[32m+[m[32m            function_map = extract_python_tests(full_path)[m
+[32m+[m[32m            if full_path.exists() and full_path.suffix == '.py':[m
+[32m+[m[32m                preview = '\n'.join(safe_read_text(full_path).splitlines()[:260])[m
+[32m+[m
+[32m+[m[32m        # Match explicit requested tests first[m
+[32m+[m[32m        for req in requested:[m
+[32m+[m[32m            candidates = [req, req.split('.')[-1], req.split('::')[-1]][m
+[32m+[m[32m            for key in candidates:[m
+[32m+[m[32m                fn = function_map.get(key)[m
+[32m+[m[32m                if fn and fn not in matched:[m
+[32m+[m[32m                    matched.append(fn)[m
+[32m+[m
+[32m+[m[32m        # If none matched but only one test name was requested, fuzzy-match any qualname ending[m
+[32m+[m[32m        if not matched and requested and function_map:[m
+[32m+[m[32m            last_req = requested[-1].split('.')[-1].split('::')[-1][m
+[32m+[m[32m            for key, fn in function_map.items():[m
+[32m+[m[32m                if key.endswith(last_req) and fn not in matched:[m
+[32m+[m[32m                    matched.append(fn)[m
+[32m+[m
+[32m+[m[32m        entries.append([m
+[32m+[m[32m            {[m
+[32m+[m[32m                'source': 'failing_test_reference',[m
+[32m+[m[32m                'file': path_in_repo,[m
+[32m+[m[32m                'change_type': 'existing',[m
+[32m+[m[32m                'added_test_defs': [],[m
+[32m+[m[32m                'deleted_test_defs': [],[m
+[32m+[m[32m                'added_assertions': [],[m
+[32m+[m[32m                'requested_tests': requested,[m
+[32m+[m[32m                'matched_test_names': sorted({fn.get('name', '') for fn in matched if fn.get('name')}),[m
+[32m+[m[32m                'matched_qualnames': sorted({fn.get('qualname', '') for fn in matched if fn.get('qualname')}),[m
+[32m+[m[32m                'extracted_functions': matched,[m
+[32m+[m[32m                'file_preview': preview,[m
+[32m+[m[32m                'raw_failing_test_reference': raw,[m
+[32m+[m[32m            }[m
+[32m+[m[32m        )[m
+[32m+[m[32m    return entries[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef dedupe_human_tests(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:[m
+[32m+[m[32m    merged: dict[tuple[str, str], dict[str, Any]] = {}[m
+[32m+[m[32m    for item in entries:[m
+[32m+[m[32m        key = (item.get('source', ''), item.get('file', '') or '')[m
+[32m+[m[32m        existing = merged.get(key)[m
+[32m+[m[32m        if not existing:[m
+[32m+[m[32m            merged[key] = item[m
+[32m+[m[32m            continue[m
+[32m+[m[32m        for field in ['added_test_defs', 'deleted_test_defs', 'added_assertions', 'requested_tests', 'matched_test_names', 'matched_qualnames']:[m
+[32m+[m[32m            vals = list(existing.get(field, [])) + list(item.get(field, []))[m
+[32m+[m[32m            deduped = [][m
+[32m+[m[32m            seen = set()[m
+[32m+[m[32m            for v in vals:[m
+[32m+[m[32m                if v and v not in seen:[m
+[32m+[m[32m                    seen.add(v)[m
+[32m+[m[32m                    deduped.append(v)[m
+[32m+[m[32m            existing[field] = deduped[m
+[32m+[m[32m        existing_funcs = existing.get('extracted_functions', [])[m
+[32m+[m[32m        seen_bodies = {f.get('qualname') or f.get('name') for f in existing_funcs}[m
+[32m+[m[32m        for fn in item.get('extracted_functions', []):[m
+[32m+[m[32m            k = fn.get('qualname') or fn.get('name')[m
+[32m+[m[32m            if k not in seen_bodies:[m
+[32m+[m[32m                existing_funcs.append(fn)[m
+[32m+[m[32m                seen_bodies.add(k)[m
+[32m+[m[32m        if not existing.get('file_preview') and item.get('file_preview'):[m
+[32m+[m[32m            existing['file_preview'] = item['file_preview'][m
+[32m+[m[32m    return list(merged.values())[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef infer_baseline_quality(entries: list[dict[str, Any]]) -> str:[m
+[32m+[m[32m    if not entries:[m
+[32m+[m[32m        return 'none'[m
+[32m+[m[32m    has_changed_defs = any(e.get('source') == 'changed_test_file' and (e.get('added_test_defs') or e.get('deleted_test_defs')) for e in entries)[m
+[32m+[m[32m    has_matched_fail = any(e.get('source') == 'failing_test_reference' and (e.get('extracted_functions') or e.get('file_preview')) for e in entries)[m
+[32m+[m[32m    if has_changed_defs:[m
+[32m+[m[32m        return 'strong'[m
+[32m+[m[32m    if has_matched_fail:[m
+[32m+[m[32m        return 'partial'[m
+[32m+[m[32m    return 'none'[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef main() -> None:[m
+[32m+[m[32m    parser = argparse.ArgumentParser(description='Extract human-written test baseline metadata from changed tests and failing test references.')[m
+[32m+[m[32m    parser.add_argument('--per-bug-dir', type=Path, default=Path('outputs/per_bug_json'), help='Directory with per-bug JSON files from step 03')[m
+[32m+[m[32m    parser.add_argument('--checkout-manifest', type=Path, default=Path('outputs/checkout_manifest.json'), help='Checkout manifest from step 02')[m
+     args = parser.parse_args()[m
+ [m
+     manifest = {}[m
+     if args.checkout_manifest.exists():[m
+         for item in read_json(args.checkout_manifest):[m
+[31m-            manifest[(item["project"], str(item["bug_id"]))] = item[m
+[32m+[m[32m            manifest[(item['project'], str(item['bug_id']))] = item[m
+ [m
+[31m-    for json_path in sorted(args.per_bug_dir.glob("*.json")):[m
+[32m+[m[32m    for

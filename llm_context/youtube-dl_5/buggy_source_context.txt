@@ -1,0 +1,102 @@
+### FILE: youtube_dl/utils.py
+1081: 
+1082:     for expression in date_formats(day_first):
+1083:         try:
+1084:             upload_date = datetime.datetime.strptime(date_str, expression).strftime('%Y%m%d')
+1085:         except ValueError:
+1086:             pass
+1087:     if upload_date is None:
+1088:         timetuple = email.utils.parsedate_tz(date_str)
+1089:         if timetuple:
+1090:             try:
+1091:                 upload_date = datetime.datetime(*timetuple[:6]).strftime('%Y%m%d')
+1092:             except ValueError:
+1093:                 pass
+1094:     if upload_date is not None:
+1095:         return compat_str(upload_date)
+1096: 
+1097: 
+1098: def unified_timestamp(date_str, day_first=True):
+1099:     if date_str is None:
+1100:         return None
+1101: 
+1102:     date_str = date_str.replace(',', ' ')
+1103: 
+1104:     pm_delta = datetime.timedelta(hours=12 if re.search(r'(?i)PM', date_str) else 0)
+1105:     timezone, date_str = extract_timezone(date_str)
+1106: 
+1107:     # Remove AM/PM + timezone
+1108:     date_str = re.sub(r'(?i)\s*(?:AM|PM)(?:\s+[A-Z]+)?', '', date_str)
+1109: 
+1110:     for expression in date_formats(day_first):
+1111:         try:
+1112:             dt = datetime.datetime.strptime(date_str, expression) - timezone + pm_delta
+1113:             return calendar.timegm(dt.timetuple())
+1114:         except ValueError:
+1115:             pass
+1116:     timetuple = email.utils.parsedate_tz(date_str)
+1117:     if timetuple:
+1118:         return calendar.timegm(timetuple.timetuple())
+1119: 
+1120: 
+1121: def determine_ext(url, default_ext='unknown_video'):
+1122:     if url is None:
+1123:         return default_ext
+1124:     guess = url.partition('?')[0].rpartition('.')[2]
+1125:     if re.match(r'^[A-Za-z0-9]+$', guess):
+1126:         return guess
+1127:     # Try extract ext from URLs like http://example.com/foo/bar.mp4/?download
+
+1089:         if timetuple:
+1090:             try:
+1091:                 upload_date = datetime.datetime(*timetuple[:6]).strftime('%Y%m%d')
+1092:             except ValueError:
+1093:                 pass
+1094:     if upload_date is not None:
+1095:         return compat_str(upload_date)
+1096: 
+1097: 
+1098: def unified_timestamp(date_str, day_first=True):
+1099:     if date_str is None:
+1100:         return None
+1101: 
+1102:     date_str = date_str.replace(',', ' ')
+1103: 
+1104:     pm_delta = datetime.timedelta(hours=12 if re.search(r'(?i)PM', date_str) else 0)
+1105:     timezone, date_str = extract_timezone(date_str)
+1106: 
+1107:     # Remove AM/PM + timezone
+1108:     date_str = re.sub(r'(?i)\s*(?:AM|PM)(?:\s+[A-Z]+)?', '', date_str)
+1109: 
+1110:     for expression in date_formats(day_first):
+1111:         try:
+1112:             dt = datetime.datetime.strptime(date_str, expression) - timezone + pm_delta
+1113:             return calendar.timegm(dt.timetuple())
+1114:         except ValueError:
+1115:             pass
+1116:     timetuple = email.utils.parsedate_tz(date_str)
+1117:     if timetuple:
+1118:         return calendar.timegm(timetuple.timetuple())
+1119: 
+1120: 
+1121: def determine_ext(url, default_ext='unknown_video'):
+1122:     if url is None:
+1123:         return default_ext
+1124:     guess = url.partition('?')[0].rpartition('.')[2]
+1125:     if re.match(r'^[A-Za-z0-9]+$', guess):
+1126:         return guess
+1127:     # Try extract ext from URLs like http://example.com/foo/bar.mp4/?download
+1128:     elif guess.rstrip('/') in KNOWN_EXTENSIONS:
+1129:         return guess.rstrip('/')
+1130:     else:
+1131:         return default_ext
+1132: 
+1133: 
+1134: def subtitles_filename(filename, sub_lang, sub_format):
+1135:     return filename.rsplit('.', 1)[0] + '.' + sub_lang + '.' + sub_format
+1136: 
+1137: 
+1138: def date_from_str(date_str):
+1139:     """
+1140:     Return a datetime object from a string in the format YYYYMMDD or
+1141:     (now|today)[+-][0-9](day|week|month|year)(s)?"""

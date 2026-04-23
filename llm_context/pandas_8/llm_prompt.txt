@@ -1,0 +1,121 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: pandas
+Bug ID: 8
+Slug: pandas_8
+
+Relevant buggy source context:
+### FILE: pandas/core/internals/blocks.py
+708:             # causes infinite loop. Cast and retry only if not objectblock.
+709:             if is_object_dtype(self):
+710:                 raise AssertionError
+711: 
+712:             # try again with a compatible block
+713:             block = self.astype(object)
+714:             return block.replace(
+715:                 to_replace=to_replace,
+716:                 value=value,
+717:                 inplace=inplace,
+718:                 regex=regex,
+719:                 convert=convert,
+720:             )
+721: 
+722:         values = self.values
+723:         if lib.is_scalar(to_replace) and isinstance(values, np.ndarray):
+724:             # The only non-DatetimeLike class that also has a non-trivial
+725:             #  try_coerce_args is ObjectBlock, but that overrides replace,
+726:             #  so does not get here.
+727:             to_replace = convert_scalar_for_putitemlike(to_replace, values.dtype)
+728: 
+729:         mask = missing.mask_missing(values, to_replace)
+730: 
+731:         if not mask.any():
+732:             if inplace:
+733:                 return [self]
+734:             return [self.copy()]
+735: 
+736:         try:
+737:             blocks = self.putmask(mask, value, inplace=inplace)
+738:             # Note: it is _not_ the case that self._can_hold_element(value)
+739:             #  is always true at this point.  In particular, that can fail
+740:             #  for:
+741:             #   "2u" with bool-dtype, float-dtype
+742:             #   0.5 with int64-dtype
+743:             #   np.nan with int64-dtype
+744:         except (TypeError, ValueError):
+745:             # GH 22083, TypeError or ValueError occurred within error handling
+746:             # causes infinite loop. Cast and retry only if not objectblock.
+747:             if is_object_dtype(self):
+748:                 raise
+749: 
+750:             assert not self._can_hold_element(value), value
+751: 
+752:             # try again with a compatible block
+753:             block = self.astype(object)
+754:             return block.replace(
+755:                 to_replace=original_to_replace,
+756:                 value=value,
+757:                 inplace=inplace,
+758:                 regex=regex,
+
+Bug-fix patch:
+diff --git a/pandas/core/internals/blocks.py b/pandas/core/internals/blocks.py
+index ff2b63858..bfde82d6f 100644
+--- a/pandas/core/internals/blocks.py
++++ b/pandas/core/internals/blocks.py
+@@ -728,11 +728,6 @@ class Block(PandasObject):
+ 
+         mask = missing.mask_missing(values, to_replace)
+ 
+-        if not mask.any():
+-            if inplace:
+-                return [self]
+-            return [self.copy()]
+-
+         try:
+             blocks = self.putmask(mask, value, inplace=inplace)
+             # Note: it is _not_ the case that self._can_hold_element(value)
+
+
+Related human-written test context:
+### TEST: TestDataFrameReplace.test_replace (pandas/tests/frame/methods/test_replace.py)
+    def test_replace(self, datetime_frame):
+        datetime_frame["A"][:5] = np.nan
+        datetime_frame["A"][-5:] = np.nan
+
+        zero_filled = datetime_frame.replace(np.nan, -1e8)
+        tm.assert_frame_equal(zero_filled, datetime_frame.fillna(-1e8))
+        tm.assert_frame_equal(zero_filled.replace(-1e8, np.nan), datetime_frame)
+
+        datetime_frame["A"][:5] = np.nan
+        datetime_frame["A"][-5:] = np.nan
+        datetime_frame["B"][:5] = -1e8
+
+        # empty
+        df = DataFrame(index=["a", "b"])
+        tm.assert_frame_equal(df, df.replace(5, 7))
+
+        # GH 11698
+        # test for mixed data types.
+        df = pd.DataFrame(
+            [("-", pd.to_datetime("20150101")), ("a", pd.to_datetime("20150102"))]
+        )
+        df1 = df.replace("-", np.nan)
+        expected_df = pd.DataFrame(
+            [(np.nan, pd.to_datetime("20150101")), ("a", pd.to_datetime("20150102"))]
+        )
+        tm.assert_frame_equal(df1, expected_df)
+
+Repository test style notes:
+- Repository appears to use pytest-style test organization.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

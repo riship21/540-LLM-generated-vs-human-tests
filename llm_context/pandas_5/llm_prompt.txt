@@ -1,0 +1,347 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: pandas
+Bug ID: 5
+Slug: pandas_5
+
+Relevant buggy source context:
+### FILE: pandas/core/indexes/base.py
+3508: 
+3509:             # Join left and right
+3510:             # Join on same leveled multi-index frames is supported
+3511:             join_idx, lidx, ridx = self_jnlevels.join(
+3512:                 other_jnlevels, how, return_indexers=True
+3513:             )
+3514: 
+3515:             # Restore the dropped levels
+3516:             # Returned index level order is
+3517:             # common levels, ldrop_names, rdrop_names
+3518:             dropped_names = ldrop_names + rdrop_names
+3519: 
+3520:             levels, codes, names = _restore_dropped_levels_multijoin(
+3521:                 self, other, dropped_names, join_idx, lidx, ridx
+3522:             )
+3523: 
+3524:             # Re-create the multi-index
+3525:             multi_join_idx = MultiIndex(
+3526:                 levels=levels, codes=codes, names=names, verify_integrity=False
+3527:             )
+3528: 
+3529:             multi_join_idx = multi_join_idx.remove_unused_levels()
+3530: 
+3531:             if return_indexers:
+3532:                 return multi_join_idx, lidx, ridx
+3533:             else:
+3534:                 return multi_join_idx
+3535: 
+3536:         jl = list(overlap)[0]
+3537: 
+3538:         # Case where only one index is multi
+3539:         # make the indices into mi's that match
+3540:         flip_order = False
+3541:         if self_is_mi:
+3542:             self, other = other, self
+3543:             flip_order = True
+3544:             # flip if join method is right or left
+3545:             how = {"right": "left", "left": "right"}.get(how, how)
+3546: 
+3547:         level = other.names.index(jl)
+3548:         result = self._join_level(
+3549:             other, level, how=how, return_indexers=return_indexers
+3550:         )
+3551: 
+3552:         if flip_order:
+3553:             if isinstance(result, tuple):
+3554:                 return result[0], result[2], result[1]
+
+Bug-fix patch:
+diff --git a/pandas/core/indexes/base.py b/pandas/core/indexes/base.py
+index 191fe5bee..b8a9827b5 100644
+--- a/pandas/core/indexes/base.py
++++ b/pandas/core/indexes/base.py
+@@ -3528,7 +3528,10 @@ class Index(IndexOpsMixin, PandasObject):
+ 
+             multi_join_idx = multi_join_idx.remove_unused_levels()
+ 
+-            return multi_join_idx, lidx, ridx
++            if return_indexers:
++                return multi_join_idx, lidx, ridx
++            else:
++                return multi_join_idx
+ 
+         jl = list(overlap)[0]
+ 
+diff --git a/pandas/tests/indexes/multi/test_join.py b/pandas/tests/indexes/multi/test_join.py
+index 062fb92c4..6be9ec463 100644
+--- a/pandas/tests/indexes/multi/test_join.py
++++ b/pandas/tests/indexes/multi/test_join.py
+@@ -96,10 +96,20 @@ def test_join_multi_wrong_order():
+     midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=["a", "b"])
+     midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=["b", "a"])
+ 
+-    join_idx, lidx, ridx = midx1.join(midx2, return_indexers=False)
++    join_idx, lidx, ridx = midx1.join(midx2, return_indexers=True)
+ 
+     exp_ridx = np.array([-1, -1, -1, -1], dtype=np.intp)
+ 
+     tm.assert_index_equal(midx1, join_idx)
+     assert lidx is None
+     tm.assert_numpy_array_equal(ridx, exp_ridx)
++
++
++def test_join_multi_return_indexers():
++    # GH 34074
++
++    midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4], [5, 6]], names=["a", "b", "c"])
++    midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=["a", "b"])
++
++    result = midx1.join(midx2, return_indexers=False)
++    tm.assert_index_equal(result, midx1)
+
+
+Related human-written test context:
+### TEST: test_join_multi_return_indexers (pandas/tests/indexes/multi/test_join.py)
+def test_join_multi_return_indexers():
+    # GH 34074
+
+    midx1 = pd.MultiIndex.from_product([[1, 2], [3, 4], [5, 6]], names=["a", "b", "c"])
+    midx2 = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=["a", "b"])
+
+    result = midx1.join(midx2, return_indexers=False)
+    tm.assert_index_equal(result, midx1)
+
+### TEST FILE: pandas/tests/groupby/test_function.py
+import builtins
+from io import StringIO
+
+import numpy as np
+import pytest
+
+from pandas.errors import UnsupportedFunctionCall
+
+import pandas as pd
+from pandas import DataFrame, Index, MultiIndex, Series, Timestamp, date_range, isna
+import pandas._testing as tm
+import pandas.core.nanops as nanops
+from pandas.util import _test_decorators as td
+
+
+@pytest.fixture(
+    params=[np.int32, np.int64, np.float32, np.float64],
+    ids=["np.int32", "np.int64", "np.float32", "np.float64"],
+)
+def numpy_dtypes_for_minmax(request):
+    """
+    Fixture of numpy dtypes with min and max values used for testing
+    cummin and cummax
+    """
+    dtype = request.param
+    min_val = (
+        np.iinfo(dtype).min if np.dtype(dtype).kind == "i" else np.finfo(dtype).min
+    )
+    max_val = (
+        np.iinfo(dtype).max if np.dtype(dtype).kind == "i" else np.finfo(dtype).max
+    )
+
+    return (dtype, min_val, max_val)
+
+
+@pytest.mark.parametrize("agg_func", ["any", "all"])
+@pytest.mark.parametrize("skipna", [True, False])
+@pytest.mark.parametrize(
+    "vals",
+    [
+        ["foo", "bar", "baz"],
+        ["foo", "", ""],
+        ["", "", ""],
+        [1, 2, 3],
+        [1, 0, 0],
+        [0, 0, 0],
+        [1.0, 2.0, 3.0],
+        [1.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [True, True, True],
+        [True, False, False],
+        [False, False, False],
+        [np.nan, np.nan, np.nan],
+    ],
+)
+def test_groupby_bool_aggs(agg_func, skipna, vals):
+    df = DataFrame({"key": ["a"] * 3 + ["b"] * 3, "val": vals * 2})
+
+    # Figure out expectation using Python builtin
+    exp = getattr(builtins, agg_func)(vals)
+
+    # edge case for missing data with skipna and 'any'
+    if skipna and all(isna(vals)) and agg_func == "any":
+        exp = False
+
+    exp_df = DataFrame([exp] * 2, columns=["val"], index=Index(["a", "b"], name="key"))
+    result = getattr(df.groupby("key"), agg_func)(skipna=skipna)
+    tm.assert_frame_equal(result, exp_df)
+
+
+def test_max_min_non_numeric():
+    # #2700
+    aa = DataFrame({"nn": [11, 11, 22, 22], "ii": [1, 2, 3, 4], "ss": 4 * ["mama"]})
+
+    result = aa.groupby("nn").max()
+    assert "ss" in result
+
+    result = aa.groupby("nn").max(numeric_only=False)
+    assert "ss" in result
+
+    result = aa.groupby("nn").min()
+    assert "ss" in result
+
+    result = aa.groupby("nn").min(numeric_only=False)
+    assert "ss" in result
+
+
+def test_intercept_builtin_sum():
+    s = Series([1.0, 2.0, np.nan, 3.0])
+    grouped = s.groupby([0, 1, 2, 2])
+
+    result = grouped.agg(builtins.sum)
+    result2 = grouped.apply(builtins.sum)
+    expected = grouped.sum()
+    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result2, expected)
+
+
+# @pytest.mark.parametrize("f", [max, min, sum])
+# def test_builtins_apply(f):
+
+
+@pytest.mark.parametrize("f", [max, min, sum])
+@pytest.mark.parametrize("keys", ["jim", ["jim", "joe"]])  # Single key  # Multi-key
+def test_builtins_apply(keys, f):
+    # see gh-8155
+    df = pd.DataFrame(np.random.randint(1, 50, (1000, 2)), columns=["jim", "joe"])
+    df["jolie"] = np.random.randn(1000)
+
+    fname = f.__name__
+    result = df.groupby(keys).apply(f)
+    ngroups = len(df.drop_duplicates(subset=keys))
+
+    assert_msg = f"invalid frame shape: {result.shape} (expected ({ngroups}, 3))"
+    assert result.shape == (ngroups, 3), assert_msg
+
+    tm.assert_frame_equal(
+        result,  # numpy's equivalent function
+        df.groupby(keys).apply(getattr(np, fname)),
+    )
+
+    if f != sum:
+        expected = df.groupby(keys).agg(fname).reset_index()
+        expected.set_index(keys, inplace=True, drop=False)
+        tm.assert_frame_equal(result, expected, check_dtype=False)
+
+    tm.assert_series_equal(getattr(result, fname)(), getattr(df, fname)())
+
+
+def test_arg_passthru():
+    # make sure that we are passing thru kwargs
+    # to our agg functions
+
+    # GH3668
+    # GH5724
+    df = pd.DataFrame(
+        {
+            "group": [1, 1, 2],
+            "int": [1, 2, 3],
+            "float": [4.0, 5.0, 6.0],
+            "string": list("abc"),
+            "category_string": pd.Series(list("abc")).astype("category"),
+            "category_int": [7, 8, 9],
+            "datetime": pd.date_range("20130101", periods=3),
+            "datetimetz": pd.date_range("20130101", periods=3, tz="US/Eastern"),
+            "timedelta": pd.timedelta_range("1 s", periods=3, freq="s"),
+        },
+        columns=[
+            "group",
+            "int",
+            "float",
+            "string",
+            "category_string",
+            "category_int",
+            "datetime",
+            "datetimetz",
+            "timedelta",
+        ],
+    )
+
+    expected_columns_numeric = Index(["int", "float", "category_int"])
+
+    # mean / median
+    expected = pd.DataFrame(
+        {
+            "category_int": [7.5, 9],
+            "float": [4.5, 6.0],
+            "timedelta": [pd.Timedelta("1.5s"), pd.Timedelta("3s")],
+            "int": [1.5, 3],
+            "datetime": [
+                pd.Timestamp("2013-01-01 12:00:00"),
+                pd.Timestamp("2013-01-03 00:00:00"),
+            ],
+            "datetimetz": [
+                pd.Timestamp("2013-01-01 12:00:00", tz="US/Eastern"),
+                pd.Timestamp("2013-01-03 00:00:00", tz="US/Eastern"),
+            ],
+        },
+        index=Index([1, 2], name="group"),
+        columns=["int", "float", "category_int", "datetime", "datetimetz", "timedelta"],
+    )
+
+    for attr in ["mean", "median"]:
+        result = getattr(df.groupby("group"), attr)()
+        tm.assert_index_equal(result.columns, expected_columns_numeric)
+
+        result = getattr(df.groupby("group"), attr)(numeric_only=False)
+        tm.assert_frame_equal(result.reindex_like(expected), expected)
+
+    # TODO: min, max *should* handle
+    # categorical (ordered) dtype
+    expected_columns = Index(
+        [
+            "int",
+            "float",
+            "string",
+            "category_int",
+            "datetime",
+            "datetimetz",
+            "timedelta",
+        ]
+    )
+    for attr in ["min", "max"]:
+        result = getattr(df.groupby("group"), attr)()
+        tm.assert_index_equal(result.columns, expected_columns)
+
+        result = getattr(df.groupby("group"), attr)(numeric_only=False)
+        tm.assert_index_equal(result.columns, expected_columns)
+
+    expected_columns = Index(
+        [
+            "int",
+            "float",
+            "string",
+            "category_string",
+            "category_int",
+            "datetime",
+            "datetimetz",
+            "timedelta",
+        ]
+
+Repository test style notes:
+- Repository appears to use pytest-style test organization.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

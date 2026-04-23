@@ -1,0 +1,121 @@
+{
+  "project": "pandas",
+  "bug_id": "10",
+  "slug": "pandas_10",
+  "bug_info": {
+    "python_version": "\"3.8.3\"",
+    "buggy_commit_id": "\"de8ca78\"",
+    "fixed_commit_id": "\"e1ee2b0679e5999c993a787606d30e75faaba7a2\"",
+    "test_file": "\"pandas/tests/series/methods/test_update.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\pandas_10.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "pandas/core/internals/blocks.py",
+      "new_path": "pandas/core/internals/blocks.py",
+      "display_path": "pandas/core/internals/blocks.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 1,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -1599,7 +1599,7 @@ class ExtensionBlock(Block):",
+          "lines": [
+            " ",
+            "         new_values = self.values if inplace else self.values.copy()",
+            " ",
+            "-        if isinstance(new, np.ndarray) and len(new) == len(mask):",
+            "+        if isinstance(new, (np.ndarray, ExtensionArray)) and len(new) == len(mask):",
+            "             new = new[mask]",
+            " ",
+            "         mask = _safe_reshape(mask, new_values.shape)"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "pandas/core/internals/blocks.py",
+      "new_path": "pandas/core/internals/blocks.py",
+      "display_path": "pandas/core/internals/blocks.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 1,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -1599,7 +1599,7 @@ class ExtensionBlock(Block):",
+          "lines": [
+            " ",
+            "         new_values = self.values if inplace else self.values.copy()",
+            " ",
+            "-        if isinstance(new, np.ndarray) and len(new) == len(mask):",
+            "+        if isinstance(new, (np.ndarray, ExtensionArray)) and len(new) == len(mask):",
+            "             new = new[mask]",
+            " ",
+            "         mask = _safe_reshape(mask, new_values.shape)"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "pandas/tests/series/methods/test_update.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_update"
+      ],
+      "matched_test_names": [
+        "test_update"
+      ],
+      "matched_qualnames": [
+        "TestUpdate.test_update"
+      ],
+      "extracted_functions": [
+        {
+          "name": "test_update",
+          "qualname": "TestUpdate.test_update",
+          "class_name": "TestUpdate",
+          "start_line": 9,
+          "end_line": 25,
+          "body": "    def test_update(self):\n        s = Series([1.5, np.nan, 3.0, 4.0, np.nan])\n        s2 = Series([np.nan, 3.5, np.nan, 5.0])\n        s.update(s2)\n\n        expected = Series([1.5, 3.5, 3.0, 5.0, np.nan])\n        tm.assert_series_equal(s, expected)\n\n        # GH 3217\n        df = DataFrame([{\"a\": 1}, {\"a\": 3, \"b\": 2}])\n        df[\"c\"] = np.nan\n\n        df[\"c\"].update(Series([\"foo\"], index=[0]))\n        expected = DataFrame(\n            [[1, np.nan, \"foo\"], [3, 2.0, np.nan]], columns=[\"a\", \"b\", \"c\"]\n        )\n        tm.assert_frame_equal(df, expected)"
+        }
+      ],
+      "file_preview": "import numpy as np\nimport pytest\n\nfrom pandas import DataFrame, Series\nimport pandas._testing as tm\n\n\nclass TestUpdate:\n    def test_update(self):\n        s = Series([1.5, np.nan, 3.0, 4.0, np.nan])\n        s2 = Series([np.nan, 3.5, np.nan, 5.0])\n        s.update(s2)\n\n        expected = Series([1.5, 3.5, 3.0, 5.0, np.nan])\n        tm.assert_series_equal(s, expected)\n\n        # GH 3217\n        df = DataFrame([{\"a\": 1}, {\"a\": 3, \"b\": 2}])\n        df[\"c\"] = np.nan\n\n        df[\"c\"].update(Series([\"foo\"], index=[0]))\n        expected = DataFrame(\n            [[1, np.nan, \"foo\"], [3, 2.0, np.nan]], columns=[\"a\", \"b\", \"c\"]\n        )\n        tm.assert_frame_equal(df, expected)\n\n    @pytest.mark.parametrize(\n        \"other, dtype, expected\",\n        [\n            # other is int\n            ([61, 63], \"int32\", Series([10, 61, 12], dtype=\"int32\")),\n            ([61, 63], \"int64\", Series([10, 61, 12])),\n            ([61, 63], float, Series([10.0, 61.0, 12.0])),\n            ([61, 63], object, Series([10, 61, 12], dtype=object)),\n            # other is float, but can be cast to int\n            ([61.0, 63.0], \"int32\", Series([10, 61, 12], dtype=\"int32\")),\n            ([61.0, 63.0], \"int64\", Series([10, 61, 12])),\n            ([61.0, 63.0], float, Series([10.0, 61.0, 12.0])),\n            ([61.0, 63.0], object, Series([10, 61.0, 12], dtype=object)),\n            # others is float, cannot be cast to int\n            ([61.1, 63.1], \"int32\", Series([10.0, 61.1, 12.0])),\n            ([61.1, 63.1], \"int64\", Series([10.0, 61.1, 12.0])),\n            ([61.1, 63.1], float, Series([10.0, 61.1, 12.0])),\n            ([61.1, 63.1], object, Series([10, 61.1, 12], dtype=object)),\n            # other is object, cannot be cast\n            ([(61,), (63,)], \"int32\", Series([10, (61,), 12])),\n            ([(61,), (63,)], \"int64\", Series([10, (61,), 12])),\n            ([(61,), (63,)], float, Series([10.0, (61,), 12.0])),\n            ([(61,), (63,)], object, Series([10, (61,), 12])),\n        ],\n    )\n    def test_update_dtypes(self, other, dtype, expected):\n\n        ser = Series([10, 11, 12], dtype=dtype)\n        other = Series(other, index=[1, 3])\n        ser.update(other)\n\n        tm.assert_series_equal(ser, expected)\n\n    @pytest.mark.parametrize(\n        \"series, other, expected\",\n        [\n            # update by key\n            (\n                Series({\"a\": 1, \"b\": 2, \"c\": 3, \"d\": 4}),\n                {\"b\": 5, \"c\": np.nan},\n                Series({\"a\": 1, \"b\": 5, \"c\": 3, \"d\": 4}),\n            ),\n            # update by position\n            (Series([1, 2, 3, 4]), [np.nan, 5, 1], Series([1, 5, 1, 4])),\n        ],\n    )\n    def test_update_from_non_series(self, series, other, expected):\n        # GH 33215\n        series.update(other)\n        tm.assert_series_equal(series, expected)\n\n    @pytest.mark.parametrize(\n        \"result, target, expected\",\n        [\n            (\n                Series([\"a\", None], dtype=\"string\"),\n                Series([None, \"b\"], dtype=\"string\"),\n                Series([\"a\", \"b\"], dtype=\"string\"),\n            ),\n            (\n                Series([1, None], dtype=\"Int64\"),\n                Series([None, 2], dtype=\"Int64\"),\n                Series([1, 2], dtype=\"Int64\"),\n            ),\n            (\n                Series([True, None], dtype=\"boolean\"),\n                Series([None, False], dtype=\"boolean\"),\n                Series([True, False], dtype=\"boolean\"),\n            ),\n        ],\n    )\n    def test_update_extension_array_series(self, result, target, expected):\n        result.update(target)\n        tm.assert_series_equal(result, expected)",
+      "raw_failing_test_reference": "\"pandas/tests/series/methods/test_update.py\""
+    }
+  ],
+  "human_test_names": [
+    "test_update"
+  ],
+  "human_test_files": [
+    "pandas/tests/series/methods/test_update.py"
+  ],
+  "human_test_count": 1,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

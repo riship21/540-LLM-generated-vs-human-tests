@@ -1,0 +1,92 @@
+### FILE: lib/ansible/playbook/collectionsearch.py
+1: # Copyright: (c) 2019, Ansible Project
+2: # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+3: 
+4: from __future__ import (absolute_import, division, print_function)
+5: __metaclass__ = type
+6: 
+7: from ansible.module_utils.six import string_types
+8: from ansible.playbook.attribute import FieldAttribute
+9: from ansible.utils.collection_loader import AnsibleCollectionLoader
+10: 
+11: 
+12: def _ensure_default_collection(collection_list=None):
+13:     default_collection = AnsibleCollectionLoader().default_collection
+14: 
+15:     if collection_list is None:
+16:         collection_list = []
+17: 
+18:     if default_collection:  # FIXME: exclude role tasks?
+19:         if isinstance(collection_list, string_types):
+20:             collection_list = [collection_list]
+21: 
+22:         if default_collection not in collection_list:
+23:             collection_list.insert(0, default_collection)
+24: 
+25:     # if there's something in the list, ensure that builtin or legacy is always there too
+26:     if collection_list and 'ansible.builtin' not in collection_list and 'ansible.legacy' not in collection_list:
+27:         collection_list.append('ansible.legacy')
+28: 
+29:     return collection_list
+30: 
+31: 
+32: class CollectionSearch:
+
+12: def _ensure_default_collection(collection_list=None):
+13:     default_collection = AnsibleCollectionLoader().default_collection
+14: 
+15:     if collection_list is None:
+16:         collection_list = []
+17: 
+18:     if default_collection:  # FIXME: exclude role tasks?
+19:         if isinstance(collection_list, string_types):
+20:             collection_list = [collection_list]
+21: 
+22:         if default_collection not in collection_list:
+23:             collection_list.insert(0, default_collection)
+24: 
+25:     # if there's something in the list, ensure that builtin or legacy is always there too
+26:     if collection_list and 'ansible.builtin' not in collection_list and 'ansible.legacy' not in collection_list:
+27:         collection_list.append('ansible.legacy')
+28: 
+29:     return collection_list
+30: 
+31: 
+32: class CollectionSearch:
+33: 
+34:     # this needs to be populated before we can resolve tasks/roles/etc
+35:     _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection)
+36: 
+37:     def _load_collections(self, attr, ds):
+38:         # this will only be called if someone specified a value; call the shared value
+39:         _ensure_default_collection(collection_list=ds)
+40: 
+41:         if not ds:  # don't return an empty collection list, just return None
+42:             return None
+43: 
+44:         return ds
+
+21: 
+22:         if default_collection not in collection_list:
+23:             collection_list.insert(0, default_collection)
+24: 
+25:     # if there's something in the list, ensure that builtin or legacy is always there too
+26:     if collection_list and 'ansible.builtin' not in collection_list and 'ansible.legacy' not in collection_list:
+27:         collection_list.append('ansible.legacy')
+28: 
+29:     return collection_list
+30: 
+31: 
+32: class CollectionSearch:
+33: 
+34:     # this needs to be populated before we can resolve tasks/roles/etc
+35:     _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection)
+36: 
+37:     def _load_collections(self, attr, ds):
+38:         # this will only be called if someone specified a value; call the shared value
+39:         _ensure_default_collection(collection_list=ds)
+40: 
+41:         if not ds:  # don't return an empty collection list, just return None
+42:             return None
+43: 
+44:         return ds

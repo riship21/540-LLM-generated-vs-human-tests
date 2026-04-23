@@ -1,0 +1,50 @@
+### FILE: pandas/core/indexes/base.py
+3053:         if side == "left":
+3054:             # searchsorted returns "indices into a sorted array such that,
+3055:             # if the corresponding elements in v were inserted before the
+3056:             # indices, the order of a would be preserved".
+3057:             # Thus, we need to subtract 1 to find values to the left.
+3058:             indexer[nonexact] -= 1
+3059:             # This also mapped not found values (values of 0 from
+3060:             # np.searchsorted) to -1, which conveniently is also our
+3061:             # sentinel for missing values
+3062:         else:
+3063:             # Mark indices to the right of the largest value as not found
+3064:             indexer[indexer == len(self)] = -1
+3065:         return indexer
+3066: 
+3067:     def _get_nearest_indexer(self, target: "Index", limit, tolerance) -> np.ndarray:
+3068:         """
+3069:         Get the indexer for the nearest index labels; requires an index with
+3070:         values that can be subtracted from each other (e.g., not strings or
+3071:         tuples).
+3072:         """
+3073:         left_indexer = self.get_indexer(target, "pad", limit=limit)
+3074:         right_indexer = self.get_indexer(target, "backfill", limit=limit)
+3075: 
+3076:         target = np.asarray(target)
+3077:         left_distances = abs(self.values[left_indexer] - target)
+3078:         right_distances = abs(self.values[right_indexer] - target)
+3079: 
+3080:         op = operator.lt if self.is_monotonic_increasing else operator.le
+3081:         indexer = np.where(
+3082:             op(left_distances, right_distances) | (right_indexer == -1),
+3083:             left_indexer,
+3084:             right_indexer,
+3085:         )
+3086:         if tolerance is not None:
+3087:             indexer = self._filter_indexer_tolerance(target, indexer, tolerance)
+3088:         return indexer
+3089: 
+3090:     def _filter_indexer_tolerance(
+3091:         self, target: "Index", indexer: np.ndarray, tolerance
+3092:     ) -> np.ndarray:
+3093:         distance = abs(self.values[indexer] - target)
+3094:         indexer = np.where(distance <= tolerance, indexer, -1)
+3095:         return indexer
+3096: 
+3097:     # --------------------------------------------------------------------
+3098:     # Indexer Conversion Methods
+3099: 
+3100:     def _convert_scalar_indexer(self, key, kind=None):
+3101:         """

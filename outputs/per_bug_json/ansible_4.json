@@ -1,0 +1,175 @@
+{
+  "project": "ansible",
+  "bug_id": "4",
+  "slug": "ansible_4",
+  "bug_info": {
+    "python_version": "\"3.6.9\"",
+    "pythonpath": "\"ansible/build/lib/\"",
+    "buggy_commit_id": "\"d91658ec0c8434c82c3ef98bfe9eb4e1027a43a3\"",
+    "fixed_commit_id": "\"18a66e291dad71128a32d662aa808213acefe0e9\"",
+    "test_file": "\"test/units/playbook/test_collectionsearch.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\ansible_4.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "lib/ansible/playbook/collectionsearch.py",
+      "new_path": "lib/ansible/playbook/collectionsearch.py",
+      "display_path": "lib/ansible/playbook/collectionsearch.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 15,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -7,6 +7,10 @@ __metaclass__ = type",
+          "lines": [
+            " from ansible.module_utils.six import string_types",
+            " from ansible.playbook.attribute import FieldAttribute",
+            " from ansible.utils.collection_loader import AnsibleCollectionLoader",
+            "+from ansible.template import is_template, Environment",
+            "+from ansible.utils.display import Display",
+            "+",
+            "+display = Display()",
+            " ",
+            " ",
+            " def _ensure_default_collection(collection_list=None):"
+          ]
+        },
+        {
+          "header": "@@ -32,7 +36,8 @@ def _ensure_default_collection(collection_list=None):",
+          "lines": [
+            " class CollectionSearch:",
+            " ",
+            "     # this needs to be populated before we can resolve tasks/roles/etc",
+            "-    _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection)",
+            "+    _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection,",
+            "+                                  always_post_validate=True, static=True)",
+            " ",
+            "     def _load_collections(self, attr, ds):",
+            "         # this will only be called if someone specified a value; call the shared value"
+          ]
+        },
+        {
+          "header": "@@ -41,4 +46,13 @@ class CollectionSearch:",
+          "lines": [
+            "         if not ds:  # don't return an empty collection list, just return None",
+            "             return None",
+            " ",
+            "+        # This duplicates static attr checking logic from post_validate()",
+            "+        # because if the user attempts to template a collection name, it will",
+            "+        # error before it ever gets to the post_validate() warning.",
+            "+        env = Environment()",
+            "+        for collection_name in ds:",
+            "+            if is_template(collection_name, env):",
+            "+                display.warning('\"collections\" is not templatable, but we found: %s, '",
+            "+                                'it will not be templated and will be used \"as is\".' % (collection_name))",
+            "+",
+            "         return ds"
+          ]
+        }
+      ],
+      "hunk_count": 3
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "lib/ansible/playbook/collectionsearch.py",
+      "new_path": "lib/ansible/playbook/collectionsearch.py",
+      "display_path": "lib/ansible/playbook/collectionsearch.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 15,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -7,6 +7,10 @@ __metaclass__ = type",
+          "lines": [
+            " from ansible.module_utils.six import string_types",
+            " from ansible.playbook.attribute import FieldAttribute",
+            " from ansible.utils.collection_loader import AnsibleCollectionLoader",
+            "+from ansible.template import is_template, Environment",
+            "+from ansible.utils.display import Display",
+            "+",
+            "+display = Display()",
+            " ",
+            " ",
+            " def _ensure_default_collection(collection_list=None):"
+          ]
+        },
+        {
+          "header": "@@ -32,7 +36,8 @@ def _ensure_default_collection(collection_list=None):",
+          "lines": [
+            " class CollectionSearch:",
+            " ",
+            "     # this needs to be populated before we can resolve tasks/roles/etc",
+            "-    _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection)",
+            "+    _collections = FieldAttribute(isa='list', listof=string_types, priority=100, default=_ensure_default_collection,",
+            "+                                  always_post_validate=True, static=True)",
+            " ",
+            "     def _load_collections(self, attr, ds):",
+            "         # this will only be called if someone specified a value; call the shared value"
+          ]
+        },
+        {
+          "header": "@@ -41,4 +46,13 @@ class CollectionSearch:",
+          "lines": [
+            "         if not ds:  # don't return an empty collection list, just return None",
+            "             return None",
+            " ",
+            "+        # This duplicates static attr checking logic from post_validate()",
+            "+        # because if the user attempts to template a collection name, it will",
+            "+        # error before it ever gets to the post_validate() warning.",
+            "+        env = Environment()",
+            "+        for collection_name in ds:",
+            "+            if is_template(collection_name, env):",
+            "+                display.warning('\"collections\" is not templatable, but we found: %s, '",
+            "+                                'it will not be templated and will be used \"as is\".' % (collection_name))",
+            "+",
+            "         return ds"
+          ]
+        }
+      ],
+      "hunk_count": 3
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "test/units/playbook/test_collectionsearch.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_collectionsearch"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "# (c) 2020 Ansible Project\n#\n# This file is part of Ansible\n#\n# Ansible is free software: you can redistribute it and/or modify\n# it under the terms of the GNU General Public License as published by\n# the Free Software Foundation, either version 3 of the License, or\n# (at your option) any later version.\n#\n# Ansible is distributed in the hope that it will be useful,\n# but WITHOUT ANY WARRANTY; without even the implied warranty of\n# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n# GNU General Public License for more details.\n#\n# You should have received a copy of the GNU General Public License\n# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.\n\nfrom __future__ import (absolute_import, division, print_function)\n__metaclass__ = type\n\nfrom ansible.playbook.collectionsearch import CollectionSearch\n\nimport pytest\n\n\ndef test_collection_static_warning(capsys):\n    \"\"\"Test that collection name is not templated.\n\n    Also, make sure that users see the warning message for the referenced name.\n    \"\"\"\n\n    collection_name = 'foo.{{bar}}'\n    cs = CollectionSearch()\n    assert collection_name in cs._load_collections(None, [collection_name])\n\n    std_out, std_err = capsys.readouterr()\n    assert '[WARNING]: \"collections\" is not templatable, but we found: %s' % collection_name in std_err\n    assert '' == std_out",
+      "raw_failing_test_reference": "\"test/units/playbook/test_collectionsearch.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/playbook/test_collectionsearch.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

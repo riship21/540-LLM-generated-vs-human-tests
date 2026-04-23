@@ -1,0 +1,160 @@
+### FILE: youtube_dl/YoutubeDL.py
+911:         return _filter
+912: 
+913:     def build_format_selector(self, format_spec):
+914:         def syntax_error(note, start):
+915:             message = (
+916:                 'Invalid format specification: '
+917:                 '{0}\n\t{1}\n\t{2}^'.format(note, format_spec, ' ' * start[1]))
+918:             return SyntaxError(message)
+919: 
+920:         PICKFIRST = 'PICKFIRST'
+921:         MERGE = 'MERGE'
+922:         SINGLE = 'SINGLE'
+923:         GROUP = 'GROUP'
+924:         FormatSelector = collections.namedtuple('FormatSelector', ['type', 'selector', 'filters'])
+925: 
+926:         def _parse_filter(tokens):
+927:             filter_parts = []
+928:             for type, string, start, _, _ in tokens:
+929:                 if type == tokenize.OP and string == ']':
+930:                     return ''.join(filter_parts)
+931:                 else:
+932:                     filter_parts.append(string)
+933: 
+934:         def _parse_format_selection(tokens, endwith=[]):
+935:             selectors = []
+936:             current_selector = None
+937:             for type, string, start, _, _ in tokens:
+938:                 # ENCODING is only defined in python 3.x
+939:                 if type == getattr(tokenize, 'ENCODING', None):
+940:                     continue
+941:                 elif type in [tokenize.NAME, tokenize.NUMBER]:
+942:                     current_selector = FormatSelector(SINGLE, string, [])
+943:                 elif type == tokenize.OP:
+944:                     if string in endwith:
+945:                         break
+946:                     elif string == ')':
+947:                         # ')' will be handled by the parentheses group
+948:                         tokens.restore_last_token()
+949:                         break
+950:                     if string == ',':
+951:                         selectors.append(current_selector)
+952:                         current_selector = None
+953:                     elif string == '/':
+954:                         first_choice = current_selector
+955:                         second_choice = _parse_format_selection(tokens, [','])
+956:                         current_selector = None
+957:                         selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))
+
+921:         MERGE = 'MERGE'
+922:         SINGLE = 'SINGLE'
+923:         GROUP = 'GROUP'
+924:         FormatSelector = collections.namedtuple('FormatSelector', ['type', 'selector', 'filters'])
+925: 
+926:         def _parse_filter(tokens):
+927:             filter_parts = []
+928:             for type, string, start, _, _ in tokens:
+929:                 if type == tokenize.OP and string == ']':
+930:                     return ''.join(filter_parts)
+931:                 else:
+932:                     filter_parts.append(string)
+933: 
+934:         def _parse_format_selection(tokens, endwith=[]):
+935:             selectors = []
+936:             current_selector = None
+937:             for type, string, start, _, _ in tokens:
+938:                 # ENCODING is only defined in python 3.x
+939:                 if type == getattr(tokenize, 'ENCODING', None):
+940:                     continue
+941:                 elif type in [tokenize.NAME, tokenize.NUMBER]:
+942:                     current_selector = FormatSelector(SINGLE, string, [])
+943:                 elif type == tokenize.OP:
+944:                     if string in endwith:
+945:                         break
+946:                     elif string == ')':
+947:                         # ')' will be handled by the parentheses group
+948:                         tokens.restore_last_token()
+949:                         break
+950:                     if string == ',':
+951:                         selectors.append(current_selector)
+952:                         current_selector = None
+953:                     elif string == '/':
+954:                         first_choice = current_selector
+955:                         second_choice = _parse_format_selection(tokens, [','])
+956:                         current_selector = None
+957:                         selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))
+958:                     elif string == '[':
+959:                         if not current_selector:
+960:                             current_selector = FormatSelector(SINGLE, 'best', [])
+961:                         format_filter = _parse_filter(tokens)
+962:                         current_selector.filters.append(format_filter)
+963:                     elif string == '(':
+964:                         if current_selector:
+965:                             raise syntax_error('Unexpected "("', start)
+966:                         current_selector = FormatSelector(GROUP, _parse_format_selection(tokens, [')']), [])
+967:                     elif string == '+':
+968:                         video_selector = current_selector
+969:                         audio_selector = _parse_format_selection(tokens, [','])
+970:                         current_selector = None
+971:                         selectors.append(FormatSelector(MERGE, (video_selector, audio_selector), []))
+972:                     else:
+973:                         raise syntax_error('Operator not recognized: "{0}"'.format(string), start)
+974:                 elif type == tokenize.ENDMARKER:
+975:                     break
+976:             if current_selector:
+977:                 selectors.append(current_selector)
+978:             return selectors
+
+943:                 elif type == tokenize.OP:
+944:                     if string in endwith:
+945:                         break
+946:                     elif string == ')':
+947:                         # ')' will be handled by the parentheses group
+948:                         tokens.restore_last_token()
+949:                         break
+950:                     if string == ',':
+951:                         selectors.append(current_selector)
+952:                         current_selector = None
+953:                     elif string == '/':
+954:                         first_choice = current_selector
+955:                         second_choice = _parse_format_selection(tokens, [','])
+956:                         current_selector = None
+957:                         selectors.append(FormatSelector(PICKFIRST, (first_choice, second_choice), []))
+958:                     elif string == '[':
+959:                         if not current_selector:
+960:                             current_selector = FormatSelector(SINGLE, 'best', [])
+961:                         format_filter = _parse_filter(tokens)
+962:                         current_selector.filters.append(format_filter)
+963:                     elif string == '(':
+964:                         if current_selector:
+965:                             raise syntax_error('Unexpected "("', start)
+966:                         current_selector = FormatSelector(GROUP, _parse_format_selection(tokens, [')']), [])
+967:                     elif string == '+':
+968:                         video_selector = current_selector
+969:                         audio_selector = _parse_format_selection(tokens, [','])
+970:                         current_selector = None
+971:                         selectors.append(FormatSelector(MERGE, (video_selector, audio_selector), []))
+972:                     else:
+973:                         raise syntax_error('Operator not recognized: "{0}"'.format(string), start)
+974:                 elif type == tokenize.ENDMARKER:
+975:                     break
+976:             if current_selector:
+977:                 selectors.append(current_selector)
+978:             return selectors
+979: 
+980:         def _build_selector_function(selector):
+981:             if isinstance(selector, list):
+982:                 fs = [_build_selector_function(s) for s in selector]
+983: 
+984:                 def selector_function(formats):
+985:                     for f in fs:
+986:                         for format in f(formats):
+987:                             yield format
+988:                 return selector_function
+989:             elif selector.type == GROUP:
+990:                 selector_function = _build_selector_function(selector.selector)
+991:             elif selector.type == PICKFIRST:
+992:                 fs = [_build_selector_function(s) for s in selector.selector]
+993: 
+994:                 def selector_function(formats):

@@ -1,0 +1,124 @@
+{
+  "project": "ansible",
+  "bug_id": "3",
+  "slug": "ansible_3",
+  "bug_info": {
+    "python_version": "\"3.6.9\"",
+    "pythonpath": "\"ansible/build/lib/\"",
+    "buggy_commit_id": "\"70219df9056ffb1e2766f572fbe71f7a1800c9f5\"",
+    "fixed_commit_id": "\"9d48884e36fb4fd9551f000b87d264383de74e75\"",
+    "test_file": "\"test/units/module_utils/test_distribution_version.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\ansible_3.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "lib/ansible/module_utils/facts/system/distribution.py",
+      "new_path": "lib/ansible/module_utils/facts/system/distribution.py",
+      "display_path": "lib/ansible/module_utils/facts/system/distribution.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -320,7 +320,8 @@ class DistributionFiles:",
+          "lines": [
+            "         elif 'SteamOS' in data:",
+            "             debian_facts['distribution'] = 'SteamOS'",
+            "             # nothing else to do, SteamOS gets correct info from python functions",
+            "-        elif path == '/etc/lsb-release' and 'Kali' in data:",
+            "+        elif path in ('/etc/lsb-release', '/etc/os-release') and 'Kali' in data:",
+            "+            # Kali does not provide /etc/lsb-release anymore",
+            "             debian_facts['distribution'] = 'Kali'",
+            "             release = re.search('DISTRIB_RELEASE=(.*)', data)",
+            "             if release:"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "lib/ansible/module_utils/facts/system/distribution.py",
+      "new_path": "lib/ansible/module_utils/facts/system/distribution.py",
+      "display_path": "lib/ansible/module_utils/facts/system/distribution.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -320,7 +320,8 @@ class DistributionFiles:",
+          "lines": [
+            "         elif 'SteamOS' in data:",
+            "             debian_facts['distribution'] = 'SteamOS'",
+            "             # nothing else to do, SteamOS gets correct info from python functions",
+            "-        elif path == '/etc/lsb-release' and 'Kali' in data:",
+            "+        elif path in ('/etc/lsb-release', '/etc/os-release') and 'Kali' in data:",
+            "+            # Kali does not provide /etc/lsb-release anymore",
+            "             debian_facts['distribution'] = 'Kali'",
+            "             release = re.search('DISTRIB_RELEASE=(.*)', data)",
+            "             if release:"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "test/units/module_utils/test_distribution_version.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_distribution_version"
+      ],
+      "matched_test_names": [
+        "test_distribution_version"
+      ],
+      "matched_qualnames": [
+        "test_distribution_version"
+      ],
+      "extracted_functions": [
+        {
+          "name": "test_distribution_version",
+          "qualname": "test_distribution_version",
+          "class_name": null,
+          "start_line": 1850,
+          "end_line": 1965,
+          "body": "def test_distribution_version(am, mocker, testcase):\n    \"\"\"tests the distribution parsing code of the Facts class\n\n    testsets have\n    * a name (for output/debugging only)\n    * input files that are faked\n      * those should be complete and also include \"irrelevant\" files that might be mistaken as coming from other distributions\n      * all files that are not listed here are assumed to not exist at all\n    * the output of ansible.module_utils.distro.linux_distribution() [called platform.dist() for historical reasons]\n    * results for the ansible variables distribution* and os_family\n\n    \"\"\"\n\n    # prepare some mock functions to get the testdata in\n    def mock_get_file_content(fname, default=None, strip=True):\n        \"\"\"give fake content if it exists, otherwise pretend the file is empty\"\"\"\n        data = default\n        if fname in testcase['input']:\n            # for debugging\n            print('faked %s for %s' % (fname, testcase['name']))\n            data = testcase['input'][fname].strip()\n        if strip and data is not None:\n            data = data.strip()\n        return data\n\n    def mock_get_uname(am, flags):\n        if '-v' in flags:\n            return testcase.get('uname_v', None)\n        elif '-r' in flags:\n            return testcase.get('uname_r', None)\n        else:\n            return None\n\n    def mock_file_exists(fname, allow_empty=False):\n        if fname not in testcase['input']:\n            return False\n\n        if allow_empty:\n            return True\n        return bool(len(testcase['input'][fname]))\n\n    def mock_platform_system():\n        return testcase.get('platform.system', 'Linux')\n\n    def mock_platform_release():\n        return testcase.get('platform.release', '')\n\n    def mock_platform_version():\n        return testcase.get('platform.version', '')\n\n    def mock_distro_name():\n        return testcase['distro']['name']\n\n    def mock_distro_id():\n        return testcase['distro']['id']\n\n    def mock_distro_version(best=False):\n        if best:\n            return testcase['distro']['version_best']\n        return testcase['distro']['version']\n\n    def mock_distro_codename():\n        return testcase['distro']['codename']\n\n    def mock_distro_os_release_info():\n        return testcase['distro']['os_release_info']\n\n    def mock_distro_lsb_release_info():\n        return testcase['distro']['lsb_release_info']\n\n    def mock_open(filename, mode='r'):\n        if filename in testcase['input']:\n            file_object = mocker.mock_open(read_data=testcase['input'][filename]).return_value\n            file_object.__iter__.return_value = testcase['input'][filename].splitlines(True)\n        else:\n            file_object = real_open(filename, mode)\n        return file_object\n\n    def mock_os_path_is_file(filename):\n        if filename in testcase['input']:\n            return True\n        return False\n\n    mocker.patch('ansible.module_utils.facts.system.distribution.get_file_content', mock_get_file_content)\n    mocker.patch('ansible.module_utils.facts.system.distribution.get_uname', mock_get_uname)\n    mocker.patch('ansible.module_utils.facts.system.distribution._file_exists', mock_file_exists)\n    mocker.patch('ansible.module_utils.distro.name', mock_distro_name)\n    mocker.patch('ansible.module_utils.distro.id', mock_distro_id)\n    mocker.patch('ansible.module_utils.distro.version', mock_distro_version)\n    mocker.patch('ansible.module_utils.distro.codename', mock_distro_codename)\n    mocker.patch(\n        'ansible.module_utils.common.sys_info.distro.os_release_info',\n        mock_distro_os_release_info)\n    mocker.patch(\n        'ansible.module_utils.common.sys_info.distro.lsb_release_info',\n        mock_distro_lsb_release_info)\n    mocker.patch('os.path.isfile', mock_os_path_is_file)\n    mocker.patch('platform.system', mock_platform_system)\n    mocker.patch('platform.release', mock_platform_release)\n    mocker.patch('platform.version', mock_platform_version)\n\n    real_open = builtins.open\n    mocker.patch.object(builtins, 'open', new=mock_open)\n\n    # run Facts()\n    distro_collector = DistributionFactCollector()\n    generated_facts = distro_collector.collect(am)\n\n    # compare with the expected output\n\n    # testcase['result'] has a list of variables and values it expects Facts() to set\n    for key, val in testcase['result'].items():\n        assert key in generated_facts\n        msg = 'Comparing value of %s on %s, should: %s, is: %s' %\\\n            (key, testcase['name'], val, generated_facts[key])\n        assert generated_facts[key] == val, msg"
+        }
+      ],
+      "file_preview": "# -*- coding: utf-8 -*-\n# Copyright: (c) 2017 Ansible Project\n# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)\n\nfrom __future__ import absolute_import, division, print_function\n__metaclass__ = type\n\nfrom itertools import product\n\nimport pytest\n\nfrom ansible.module_utils.six.moves import builtins\n\n# the module we are actually testing (sort of)\nfrom ansible.module_utils.facts.system.distribution import DistributionFactCollector\n\n\n# to generate the testcase data, you can use the script gen_distribution_version_testcase.py in hacking/tests\nTESTSETS = [\n    {\n        \"platform.dist\": [\n            \"centos\",\n            \"7.2.1511\",\n            \"Core\"\n        ],\n        'distro': {\n            'codename': 'Core',\n            'id': 'centos',\n            'name': 'CentOS Linux',\n            'version': '7',\n            'version_best': '7.2.1511',\n            \"lsb_release_info\": {\n                \"release\": \"7.2.1511\",\n                \"codename\": \"Core\",\n                \"distributor_id\": \"CentOS\",\n                \"lsb_version\": \":core-4.1-amd64:core-4.1-noarch\",\n                \"description\": \"CentOS Linux release 7.2.1511 (Core)\"\n            },\n            \"os_release_info\": {\n                \"name\": \"CentOS Linux\",\n                \"ansi_color\": \"0;31\",\n                \"id_like\": \"rhel fedora\",\n                \"version_id\": \"7\",\n                \"bug_report_url\": \"https://bugs.centos.org/\",\n                \"centos_mantisbt_project\": \"CentOS-7\",\n                \"pretty_name\": \"CentOS Linux 7 (Core)\",\n                \"version\": \"7 (Core)\",\n                \"redhat_support_product_version\": \"7\",\n                \"centos_mantisbt_project_version\": \"7\",\n                \"redhat_support_product\": \"centos\",\n                \"home_url\": \"https://www.centos.org/\",\n                \"cpe_name\": \"cpe:/o:centos:centos:7\",\n                \"id\": \"centos\",\n                \"codename\": \"Core\"\n            },\n        },\n        \"input\": {\n            \"/etc/redhat-release\": \"CentOS Linux release 7.2.1511 (Core) \\n\",\n            \"/etc/os-release\": (\n                \"NAME=\\\"CentOS Linux\\\"\\nVERSION=\\\"7 (Core)\\\"\\nID=\\\"centos\\\"\\nID_LIKE=\\\"rhel fedora\\\"\\nVERSION_ID=\\\"7\\\"\\n\"\n                \"PRETTY_NAME=\\\"CentOS Linux 7 (Core)\\\"\\nANSI_COLOR=\\\"0;31\\\"\\nCPE_NAME=\\\"cpe:/o:centos:centos:7\\\"\\n\"\n                \"HOME_URL=\\\"https://www.centos.org/\\\"\\nBUG_REPORT_URL=\\\"https://bugs.centos.org/\\\"\\n\\nCENTOS_MANTISBT_PROJECT=\\\"CentOS-7\\\"\\n\"\n                \"CENTOS_MANTISBT_PROJECT_VERSION=\\\"7\\\"\\nREDHAT_SUPPORT_PRODUCT=\\\"centos\\\"\\nREDHAT_SUPPORT_PRODUCT_VERSION=\\\"7\\\"\\n\\n\"\n            ),\n            \"/etc/system-release\": \"CentOS Linux release 7.2.1511 (Core) \\n\"\n        },\n        \"name\": \"CentOS 7.2.1511\",\n        \"result\": {\n            \"distribution_release\": \"Core\",\n            \"distribution\": \"CentOS\",\n            \"distribution_major_version\": \"7\",\n            \"os_family\": \"RedHat\",\n            \"distribution_version\": \"7.2\",\n        }\n    },\n    {\n        \"name\": \"CentOS 6.7\",\n        \"platform.dist\": [\n            \"centos\",\n            \"6.7\",\n            \"Final\"\n        ],\n        'distro': {\n            'codename': 'Final',\n            'id': 'centos',\n            'name': 'CentOS Linux',\n            'version': '6.7',\n            'version_best': '6.7',\n            'os_release_info': {},\n            'lsb_release_info': {\n                'release': '6.7',\n                'codename': 'Final',\n                'distributor_id': 'CentOS',\n                'lsb_version': ':base-4.0-amd64:base-4.0-noarch:core-4.0-amd64:core-4.0-noarch',\n                'description': 'CentOS release 6.7 (Final)'\n            },\n        },\n        \"input\": {\n            \"/etc/redhat-release\": \"CentOS release 6.7 (Final)\\n\",\n            \"/etc/lsb-release\": (\n                \"LSB_VERSION=base-4.0-amd64:base-4.0-noarch:core-4.0-amd64:core-4.0-noarch:graphics-4.0-amd64:graphics-4.0-noarch:\"\n                \"printing-4.0-amd64:printing-4.0-noarch\\n\"\n            ),\n            \"/etc/system-release\": \"CentOS release 6.7 (Final)\\n\"\n        },\n        \"result\": {\n            \"distribution_release\": \"Final\",\n            \"distribution\": \"CentOS\",\n            \"distribution_major_version\": \"6\",\n            \"os_family\": \"RedHat\",\n            \"distribution_version\": \"6.7\"\n        }\n    },\n    {\n        \"name\": \"RedHat 7.7\",\n        \"distro\": {\n            \"codename\": \"Maipo\",\n            \"id\": \"rhel\",\n            \"name\": \"Red Hat Enterprise Linux Server\",\n            \"version\": \"7.7\",\n            \"version_best\": \"7.7\",\n            \"lsb_release_info\": {},\n            \"os_release_info\": {\n                \"name\": \"Red Hat Enterprise Linux Server\",\n                \"version\": \"7.7 (Maipo)\",\n                \"id\": \"rhel\",\n                \"id_like\": \"fedora\",\n                \"variant\": \"Server\",\n                \"variant_id\": \"server\",\n                \"version_id\": \"7.7\",\n                \"pretty_name\": \"Red Hat Enterprise Linux Server 7.7 (Maipo)\",\n                \"ansi_color\": \"0;31\",\n                \"cpe_name\": \"cpe:/o:redhat:enterprise_linux:7.7:GA:server\",\n                \"home_url\": \"https://www.redhat.com/\",\n                \"bug_report_url\": \"https://bugzilla.redhat.com/\",\n                \"redhat_bugzilla_product\": \"Red Hat Enterprise Linux 7\",\n                \"redhat_bugzilla_product_version\": \"7.7\",\n                \"redhat_support_product\": \"Red Hat Enterprise Linux\",\n                \"redhat_support_product_version\": \"7.7\",\n                \"codename\": \"Maipo\"\n            }\n        },\n        \"input\": {\n            \"/etc/redhat-release\": \"Red Hat Enterprise Linux Server release 7.7 (Maipo)\\n\",\n            \"/etc/system-release\": \"Red Hat Enterprise Linux Server release 7.7 (Maipo)\\n\",\n            \"/etc/os-release\": \"NAME=\\\"Red Hat Enterprise Linux Server\\\"\\nVERSION=\\\"7.7 (Maipo)\\\"\\nID=\\\"rhel\\\"\\nID_LIKE=\\\"fedora\\\"\\nVARIANT=\\\"Server\\\"\\nVARIANT_ID=\\\"server\\\"\\nVERSION_ID=\\\"7.7\\\"\\nPRETTY_NAME=\\\"Red Hat Enterprise Linux Server 7.7 (Maipo)\\\"\\nANSI_COLOR=\\\"0;31\\\"\\nCPE_NAME=\\\"cpe:/o:redhat:enterprise_linux:7.7:GA:server\\\"\\nHOME_URL=\\\"https://www.redhat.com/\\\"\\nBUG_REPORT_URL=\\\"https://bugzilla.redhat.com/\\\"\\n\\nREDHAT_BUGZILLA_PRODUCT=\\\"Red Hat Enterprise Linux 7\\\"\\nREDHAT_BUGZILLA_PRODUCT_VERSION=7.7\\nREDHAT_SUPPORT_PRODUCT=\\\"Red Hat Enterprise Linux\\\"\\nREDHAT_SUPPORT_PRODUCT_VERSION=\\\"7.7\\\"\\n\"  # noqa\n        },\n        \"platform.dist\": [\n            \"rhel\",\n            \"7.7\",\n            \"Maipo\"\n        ],\n        \"result\": {\n            \"distribution\": \"RedHat\",\n            \"distribution_version\": \"7.7\",\n            \"distribution_release\": \"Maipo\",\n            \"distribution_major_version\": \"7\",\n            \"os_family\": \"RedHat\"\n        }\n    },\n    {\n        \"name\": \"RedHat 7.2\",\n        \"platform.dist\": [\n            \"redhat\",\n            \"7.2\",\n            \"Maipo\"\n        ],\n        'distro': {\n            'codename': 'Maipo',\n            'id': 'rhel',\n            'name': 'RedHat Enterprise Linux',\n            'version': '7.2',\n            'version_best': '7.2',\n            'os_release_info': {},\n            'lsb_release_info': {},\n        },\n        \"input\": {\n            \"/etc/redhat-release\": \"Red Hat Enterprise Linux Server release 7.2 (Maipo)\\n\",\n            \"/etc/os-release\": (\n                \"NAME=\\\"Red Hat Enterprise Linux Server\\\"\\nVERSION=\\\"7.2 (Maipo)\\\"\\nID=\\\"rhel\\\"\\nID_LIKE=\\\"fedora\\\"\\nVERSION_ID=\\\"7.2\\\"\\n\"\n                \"PRETTY_NAME=\\\"Red Hat Enterprise Linux Server 7.2 (Maipo)\\\"\\nANSI_COLOR=\\\"0;31\\\"\\n\"\n                \"CPE_NAME=\\\"cpe:/o:redhat:enterprise_linux:7.2:GA:server\\\"\\nHOME_URL=\\\"https://www.redhat.com/\\\"\\n\"\n                \"BUG_REPORT_URL=\\\"https://bugzilla.redhat.com/\\\"\\n\\nREDHAT_BUGZILLA_PRODUCT=\\\"Red Hat Enterprise Linux 7\\\"\\n\"\n                \"REDHAT_BUGZILLA_PRODUCT_VERSION=7.2\\nREDHAT_SUPPORT_PRODUCT=\\\"Red Hat Enterprise Linux\\\"\\n\"\n                \"REDHAT_SUPPORT_PRODUCT_VERSION=\\\"7.2\\\"\\n\"\n            ),\n            \"/etc/system-release\": \"Red Hat Enterprise Linux Server release 7.2 (Maipo)\\n\"\n        },\n        \"result\": {\n            \"distribution_release\": \"Maipo\",\n            \"distribution\": \"RedHat\",\n            \"distribution_major_version\": \"7\",\n            \"os_family\": \"RedHat\",\n            \"distribution_version\": \"7.2\"\n        }\n    },\n    {\n        \"name\": \"RedHat 6.7\",\n        \"platform.dist\": [\n            \"redhat\",\n            \"6.7\",\n            \"Santiago\"\n        ],\n        'distro': {\n            'codename': 'Santiago',\n            'id': 'rhel',\n            'name': 'RedHat Enterprise Linux',\n            'version': '6.7',\n            'version_best': '6.7',\n            'os_release_info': {},\n            'lsb_release_info': {},\n        },\n        \"input\": {\n            \"/etc/redhat-release\": \"Red Hat Enterprise Linux Server release 6.7 (Santiago)\\n\",\n            \"/etc/lsb-release\": (\n                \"LSB_VERSION=base-4.0-amd64:base-4.0-noarch:core-4.0-amd64:core-4.0-noarch:graphics-4.0-amd64:graphics-4.0-noarch:\"\n                \"printing-4.0-amd64:printing-4.0-noarch\\n\"\n            ),\n            \"/etc/system-release\": \"Red Hat Enterprise Linux Server release 6.7 (Santiago)\\n\"\n        },\n        \"result\": {\n            \"distribution_release\": \"Santiago\",\n            \"distribution\": \"RedHat\",\n            \"distribution_major_version\": \"6\",\n            \"os_family\": \"RedHat\",\n            \"distribution_version\": \"6.7\"\n        }\n    },\n    {\n        \"name\": \"Virtuozzo 7.3\",\n        \"platform.dist\": [\n            \"redhat\",\n            \"7.3\",\n            \"\"\n        ],\n        'distro': {\n            'codename': '',\n            'id': 'virtuozzo',\n            'name': 'Virtuozzo Linux',\n            'version': '7.3',\n            'version_best': '7.3',\n            'os_release_info': {},\n            'lsb_release_info': {},\n        },\n        \"input\": {\n            \"/etc/redhat-release\": \"Virtuozzo Linux release 7.3\\n\",\n            \"/etc/os-release\": (\n                \"NAME=\\\"Virtuozzo\\\"\\n\"\n                \"VERSION=\\\"7.0.3\\\"\\n\"\n                \"ID=\\\"virtuozzo\\\"\\n\"\n                \"ID_LIKE=\\\"rhel fedora\\\"\\n\"\n                \"VERSION_ID=\\\"7\\\"\\n\"\n                \"PRETTY_NAME=\\\"Virtuozzo release 7.0.3\\\"\\n\"\n                \"ANSI_COLOR=\\\"0;31\\\"\\n\"\n                \"CPE_NAME=\\\"cpe:/o:virtuozzoproject:vz:7\\\"\\n\"\n                \"HOME_URL=\\\"http://www.virtuozzo.com\\\"\\n\"\n                \"BUG_REPORT_URL=\\\"https://bugs.openvz.org/\\\"\\n\"\n            ),\n            \"/etc/system-release\": \"Virtuozzo release 7.0.3 (640)\\n\"\n        },",
+      "raw_failing_test_reference": "\"test/units/module_utils/test_distribution_version.py\""
+    }
+  ],
+  "human_test_names": [
+    "test_distribution_version"
+  ],
+  "human_test_files": [
+    "test/units/module_utils/test_distribution_version.py"
+  ],
+  "human_test_count": 1,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

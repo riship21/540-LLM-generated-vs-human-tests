@@ -1,0 +1,112 @@
+{
+  "project": "pandas",
+  "bug_id": "7",
+  "slug": "pandas_7",
+  "bug_info": {
+    "python_version": "\"3.8.3\"",
+    "buggy_commit_id": "\"27f365d\"",
+    "fixed_commit_id": "\"64336ff8414f8977ff94adb9a5bc000a3a4ef454\"",
+    "test_file": "\"pandas/tests/frame/indexing/test_indexing.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\pandas_7.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "pandas/core/indexes/base.py",
+      "new_path": "pandas/core/indexes/base.py",
+      "display_path": "pandas/core/indexes/base.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 3,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -3073,9 +3073,8 @@ class Index(IndexOpsMixin, PandasObject):",
+          "lines": [
+            "         left_indexer = self.get_indexer(target, \"pad\", limit=limit)",
+            "         right_indexer = self.get_indexer(target, \"backfill\", limit=limit)",
+            " ",
+            "-        target = np.asarray(target)",
+            "-        left_distances = abs(self.values[left_indexer] - target)",
+            "-        right_distances = abs(self.values[right_indexer] - target)",
+            "+        left_distances = np.abs(self[left_indexer] - target)",
+            "+        right_distances = np.abs(self[right_indexer] - target)",
+            " ",
+            "         op = operator.lt if self.is_monotonic_increasing else operator.le",
+            "         indexer = np.where("
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "pandas/core/indexes/base.py",
+      "new_path": "pandas/core/indexes/base.py",
+      "display_path": "pandas/core/indexes/base.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 2,
+      "deleted_lines": 3,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -3073,9 +3073,8 @@ class Index(IndexOpsMixin, PandasObject):",
+          "lines": [
+            "         left_indexer = self.get_indexer(target, \"pad\", limit=limit)",
+            "         right_indexer = self.get_indexer(target, \"backfill\", limit=limit)",
+            " ",
+            "-        target = np.asarray(target)",
+            "-        left_distances = abs(self.values[left_indexer] - target)",
+            "-        right_distances = abs(self.values[right_indexer] - target)",
+            "+        left_distances = np.abs(self[left_indexer] - target)",
+            "+        right_distances = np.abs(self[right_indexer] - target)",
+            " ",
+            "         op = operator.lt if self.is_monotonic_increasing else operator.le",
+            "         indexer = np.where("
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "pandas/tests/frame/indexing/test_indexing.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_indexing"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "from datetime import date, datetime, time, timedelta\nimport re\n\nimport numpy as np\nimport pytest\n\nfrom pandas._libs.tslib import iNaT\n\nfrom pandas.core.dtypes.common import is_float_dtype, is_integer\n\nimport pandas as pd\nfrom pandas import (\n    DataFrame,\n    DatetimeIndex,\n    Index,\n    MultiIndex,\n    Series,\n    Timestamp,\n    date_range,\n    isna,\n    notna,\n)\nimport pandas._testing as tm\nfrom pandas.arrays import SparseArray\nimport pandas.core.common as com\nfrom pandas.core.indexing import IndexingError\n\nfrom pandas.tseries.offsets import BDay\n\n\nclass TestGet:\n    def test_get(self, float_frame):\n        b = float_frame.get(\"B\")\n        tm.assert_series_equal(b, float_frame[\"B\"])\n\n        assert float_frame.get(\"foo\") is None\n        tm.assert_series_equal(\n            float_frame.get(\"foo\", float_frame[\"B\"]), float_frame[\"B\"]\n        )\n\n    @pytest.mark.parametrize(\n        \"df\",\n        [\n            DataFrame(),\n            DataFrame(columns=list(\"AB\")),\n            DataFrame(columns=list(\"AB\"), index=range(3)),\n        ],\n    )\n    def test_get_none(self, df):\n        # see gh-5652\n        assert df.get(None) is None\n\n\nclass TestDataFrameIndexing:\n    def test_getitem(self, float_frame):\n        # Slicing\n        sl = float_frame[:20]\n        assert len(sl.index) == 20\n\n        # Column access\n        for _, series in sl.items():\n            assert len(series.index) == 20\n            assert tm.equalContents(series.index, sl.index)\n\n        for key, _ in float_frame._series.items():\n            assert float_frame[key] is not None\n\n        assert \"random\" not in float_frame\n        with pytest.raises(KeyError, match=\"random\"):\n            float_frame[\"random\"]\n\n        df = float_frame.copy()\n        df[\"$10\"] = np.random.randn(len(df))\n\n        ad = np.random.randn(len(df))\n        df[\"@awesome_domain\"] = ad\n\n        with pytest.raises(KeyError, match=re.escape(\"'df[\\\"$10\\\"]'\")):\n            df.__getitem__('df[\"$10\"]')\n\n        res = df[\"@awesome_domain\"]\n        tm.assert_numpy_array_equal(ad, res.values)\n\n    def test_getitem_dupe_cols(self):\n        df = DataFrame([[1, 2, 3], [4, 5, 6]], columns=[\"a\", \"a\", \"b\"])\n        msg = \"\\\"None of [Index(['baf'], dtype='object')] are in the [columns]\\\"\"\n        with pytest.raises(KeyError, match=re.escape(msg)):\n            df[[\"baf\"]]\n\n    @pytest.mark.parametrize(\"key_type\", [iter, np.array, Series, Index])\n    def test_loc_iterable(self, float_frame, key_type):\n        idx = key_type([\"A\", \"B\", \"C\"])\n        result = float_frame.loc[:, idx]\n        expected = float_frame.loc[:, [\"A\", \"B\", \"C\"]]\n        tm.assert_frame_equal(result, expected)\n\n    @pytest.mark.parametrize(\n        \"idx_type\",\n        [\n            list,\n            iter,\n            Index,\n            set,\n            lambda l: dict(zip(l, range(len(l)))),\n            lambda l: dict(zip(l, range(len(l)))).keys(),\n        ],\n        ids=[\"list\", \"iter\", \"Index\", \"set\", \"dict\", \"dict_keys\"],\n    )\n    @pytest.mark.parametrize(\"levels\", [1, 2])\n    def test_getitem_listlike(self, idx_type, levels, float_frame):\n        # GH 21294\n\n        if levels == 1:\n            frame, missing = float_frame, \"food\"\n        else:\n            # MultiIndex columns\n            frame = DataFrame(\n                np.random.randn(8, 3),\n                columns=Index(\n                    [(\"foo\", \"bar\"), (\"baz\", \"qux\"), (\"peek\", \"aboo\")],\n                    name=(\"sth\", \"sth2\"),\n                ),\n            )\n            missing = (\"good\", \"food\")\n\n        keys = [frame.columns[1], frame.columns[0]]\n        idx = idx_type(keys)\n        idx_check = list(idx_type(keys))\n\n        result = frame[idx]\n\n        expected = frame.loc[:, idx_check]\n        expected.columns.names = frame.columns.names\n\n        tm.assert_frame_equal(result, expected)\n\n        idx = idx_type(keys + [missing])\n        with pytest.raises(KeyError, match=\"not in index\"):\n            frame[idx]\n\n    @pytest.mark.parametrize(\n        \"val,expected\", [(2 ** 63 - 1, Series([1])), (2 ** 63, Series([2]))]\n    )\n    def test_loc_uint64(self, val, expected):\n        # see gh-19399\n        df = DataFrame([1, 2], index=[2 ** 63 - 1, 2 ** 63])\n        result = df.loc[val]\n\n        expected.name = val\n        tm.assert_series_equal(result, expected)\n\n    def test_getitem_callable(self, float_frame):\n        # GH 12533\n        result = float_frame[lambda x: \"A\"]\n        tm.assert_series_equal(result, float_frame.loc[:, \"A\"])\n\n        result = float_frame[lambda x: [\"A\", \"B\"]]\n        tm.assert_frame_equal(result, float_frame.loc[:, [\"A\", \"B\"]])\n\n        df = float_frame[:3]\n        result = df[lambda x: [True, False, True]]\n        tm.assert_frame_equal(result, float_frame.iloc[[0, 2], :])\n\n    def test_setitem_list(self, float_frame):\n\n        float_frame[\"E\"] = \"foo\"\n        data = float_frame[[\"A\", \"B\"]]\n        float_frame[[\"B\", \"A\"]] = data\n\n        tm.assert_series_equal(float_frame[\"B\"], data[\"A\"], check_names=False)\n        tm.assert_series_equal(float_frame[\"A\"], data[\"B\"], check_names=False)\n\n        msg = \"Columns must be same length as key\"\n        with pytest.raises(ValueError, match=msg):\n            data[[\"A\"]] = float_frame[[\"A\", \"B\"]]\n\n        msg = \"Length of values does not match length of index\"\n        with pytest.raises(ValueError, match=msg):\n            data[\"A\"] = range(len(data.index) - 1)\n\n        df = DataFrame(0, index=range(3), columns=[\"tt1\", \"tt2\"], dtype=np.int_)\n        df.loc[1, [\"tt1\", \"tt2\"]] = [1, 2]\n\n        result = df.loc[df.index[1], [\"tt1\", \"tt2\"]]\n        expected = Series([1, 2], df.columns, dtype=np.int_, name=1)\n        tm.assert_series_equal(result, expected)\n\n        df[\"tt1\"] = df[\"tt2\"] = \"0\"\n        df.loc[df.index[1], [\"tt1\", \"tt2\"]] = [\"1\", \"2\"]\n        result = df.loc[df.index[1], [\"tt1\", \"tt2\"]]\n        expected = Series([\"1\", \"2\"], df.columns, name=1)\n        tm.assert_series_equal(result, expected)\n\n    def test_setitem_list_not_dataframe(self, float_frame):\n        data = np.random.randn(len(float_frame), 2)\n        float_frame[[\"A\", \"B\"]] = data\n        tm.assert_almost_equal(float_frame[[\"A\", \"B\"]].values, data)\n\n    def test_setitem_list_of_tuples(self, float_frame):\n        tuples = list(zip(float_frame[\"A\"], float_frame[\"B\"]))\n        float_frame[\"tuples\"] = tuples\n\n        result = float_frame[\"tuples\"]\n        expected = Series(tuples, index=float_frame.index, name=\"tuples\")\n        tm.assert_series_equal(result, expected)\n\n    def test_setitem_mulit_index(self):\n        # GH7655, test that assigning to a sub-frame of a frame\n        # with multi-index columns aligns both rows and columns\n        it = [\"jim\", \"joe\", \"jolie\"], [\"first\", \"last\"], [\"left\", \"center\", \"right\"]\n\n        cols = MultiIndex.from_product(it)\n        index = pd.date_range(\"20141006\", periods=20)\n        vals = np.random.randint(1, 1000, (len(index), len(cols)))\n        df = pd.DataFrame(vals, columns=cols, index=index)\n\n        i, j = df.index.values.copy(), it[-1][:]\n\n        np.random.shuffle(i)\n        df[\"jim\"] = df[\"jolie\"].loc[i, ::-1]\n        tm.assert_frame_equal(df[\"jim\"], df[\"jolie\"])\n\n        np.random.shuffle(j)\n        df[(\"joe\", \"first\")] = df[(\"jolie\", \"last\")].loc[i, j]\n        tm.assert_frame_equal(df[(\"joe\", \"first\")], df[(\"jolie\", \"last\")])\n\n        np.random.shuffle(j)\n        df[(\"joe\", \"last\")] = df[(\"jolie\", \"first\")].loc[i, j]\n        tm.assert_frame_equal(df[(\"joe\", \"last\")], df[(\"jolie\", \"first\")])\n\n    def test_setitem_callable(self):\n        # GH 12533\n        df = pd.DataFrame({\"A\": [1, 2, 3, 4], \"B\": [5, 6, 7, 8]})\n        df[lambda x: \"A\"] = [11, 12, 13, 14]\n\n        exp = pd.DataFrame({\"A\": [11, 12, 13, 14], \"B\": [5, 6, 7, 8]})\n        tm.assert_frame_equal(df, exp)\n\n    def test_setitem_other_callable(self):\n        # GH 13299\n        def inc(x):\n            return x + 1\n\n        df = pd.DataFrame([[-1, 1], [1, -1]])\n        df[df > 0] = inc\n\n        expected = pd.DataFrame([[-1, inc], [inc, -1]])\n        tm.assert_frame_equal(df, expected)\n\n    def test_getitem_boolean(\n        self, float_string_frame, mixed_float_frame, mixed_int_frame, datetime_frame\n    ):\n        # boolean indexing\n        d = datetime_frame.index[10]\n        indexer = datetime_frame.index > d\n        indexer_obj = indexer.astype(object)\n\n        subindex = datetime_frame.index[indexer]\n        subframe = datetime_frame[indexer]\n",
+      "raw_failing_test_reference": "\"pandas/tests/frame/indexing/test_indexing.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "pandas/tests/frame/indexing/test_indexing.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

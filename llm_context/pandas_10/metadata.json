@@ -1,0 +1,24 @@
+{
+  "project": "pandas",
+  "bug_id": "10",
+  "slug": "pandas_10",
+  "status_final": "keep",
+  "recommended_status": "keep",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_10\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\pandas_10\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [
+    "test_update"
+  ],
+  "human_test_files": [
+    "pandas/tests/series/methods/test_update.py"
+  ],
+  "source_file_paths": [
+    "pandas/core/internals/blocks.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"pandas/tests/series/methods/test_update.py\"",
+  "buggy_commit": "\"de8ca78\"",
+  "fixed_commit": "\"e1ee2b0679e5999c993a787606d30e75faaba7a2\""
+}

@@ -1,0 +1,374 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: pandas
+Bug ID: 2
+Slug: pandas_2
+
+Relevant buggy source context:
+### FILE: pandas/core/indexing.py
+1996:         raise AbstractMethodError(self)
+1997: 
+1998:     def __getitem__(self, key):
+1999:         if not isinstance(key, tuple):
+2000: 
+2001:             # we could have a convertible item here (e.g. Timestamp)
+2002:             if not is_list_like_indexer(key):
+2003:                 key = tuple([key])
+2004:             else:
+2005:                 raise ValueError("Invalid call for scalar access (getting)!")
+2006: 
+2007:         key = self._convert_key(key)
+2008:         return self.obj._get_value(*key, takeable=self._takeable)
+2009: 
+2010:     def __setitem__(self, key, value):
+2011:         if isinstance(key, tuple):
+2012:             key = tuple(com.apply_if_callable(x, self.obj) for x in key)
+2013:         else:
+2014:             # scalar callable may return tuple
+2015:             key = com.apply_if_callable(key, self.obj)
+2016: 
+2017:         if not isinstance(key, tuple):
+2018:             key = _tuplify(self.ndim, key)
+2019:         if len(key) != self.ndim:
+2020:             raise ValueError("Not enough indexers for scalar access (setting)!")
+2021: 
+2022:         key = list(self._convert_key(key, is_setter=True))
+2023:         self.obj._set_value(*key, value=value, takeable=self._takeable)
+2024: 
+2025: 
+2026: @doc(IndexingMixin.at)
+2027: class _AtIndexer(_ScalarAccessIndexer):
+2028:     _takeable = False
+2029: 
+2030:     def _convert_key(self, key, is_setter: bool = False):
+2031:         """
+2032:         Require they keys to be the same type as the index. (so we don't
+2033:         fallback)
+2034:         """
+2035:         # allow arbitrary setting
+2036:         if is_setter:
+2037:             return list(key)
+2038: 
+2039:         return key
+2040: 
+2041:     @property
+2042:     def _axes_are_unique(self) -> bool:
+2043:         # Only relevant for self.ndim == 2
+2044:         assert self.ndim == 2
+2045:         return self.obj.index.is_unique and self.obj.columns.is_unique
+
+2012:             key = tuple(com.apply_if_callable(x, self.obj) for x in key)
+2013:         else:
+2014:             # scalar callable may return tuple
+2015:             key = com.apply_if_callable(key, self.obj)
+2016: 
+2017:         if not isinstance(key, tuple):
+2018:             key = _tuplify(self.ndim, key)
+2019:         if len(key) != self.ndim:
+2020:             raise ValueError("Not enough indexers for scalar access (setting)!")
+2021: 
+2022:         key = list(self._convert_key(key, is_setter=True))
+2023:         self.obj._set_value(*key, value=value, takeable=self._takeable)
+2024: 
+2025: 
+2026: @doc(IndexingMixin.at)
+2027: class _AtIndexer(_ScalarAccessIndexer):
+2028:     _takeable = False
+2029: 
+2030:     def _convert_key(self, key, is_setter: bool = False):
+2031:         """
+2032:         Require they keys to be the same type as the index. (so we don't
+2033:         fallback)
+2034:         """
+2035:         # allow arbitrary setting
+2036:         if is_setter:
+2037:             return list(key)
+2038: 
+2039:         return key
+2040: 
+2041:     @property
+2042:     def _axes_are_unique(self) -> bool:
+2043:         # Only relevant for self.ndim == 2
+2044:         assert self.ndim == 2
+2045:         return self.obj.index.is_unique and self.obj.columns.is_unique
+2046: 
+2047:     def __getitem__(self, key):
+2048: 
+2049:         if self.ndim == 2 and not self._axes_are_unique:
+2050:             # GH#33041 fall back to .loc
+2051:             if not isinstance(key, tuple) or not all(is_scalar(x) for x in key):
+2052:                 raise ValueError("Invalid call for scalar access (getting)!")
+2053:             return self.obj.loc[key]
+2054: 
+2055:         return super().__getitem__(key)
+2056: 
+2057:     def __setitem__(self, key, value):
+
+Bug-fix patch:
+diff --git a/pandas/core/indexing.py b/pandas/core/indexing.py
+index b857a5919..3a146bb04 100644
+--- a/pandas/core/indexing.py
++++ b/pandas/core/indexing.py
+@@ -2016,10 +2016,10 @@ class _ScalarAccessIndexer(_NDFrameIndexerBase):
+ 
+         if not isinstance(key, tuple):
+             key = _tuplify(self.ndim, key)
++        key = list(self._convert_key(key, is_setter=True))
+         if len(key) != self.ndim:
+             raise ValueError("Not enough indexers for scalar access (setting)!")
+ 
+-        key = list(self._convert_key(key, is_setter=True))
+         self.obj._set_value(*key, value=value, takeable=self._takeable)
+ 
+ 
+@@ -2032,6 +2032,12 @@ class _AtIndexer(_ScalarAccessIndexer):
+         Require they keys to be the same type as the index. (so we don't
+         fallback)
+         """
++        # GH 26989
++        # For series, unpacking key needs to result in the label.
++        # This is already the case for len(key) == 1; e.g. (1,)
++        if self.ndim == 1 and len(key) > 1:
++            key = (key,)
++
+         # allow arbitrary setting
+         if is_setter:
+             return list(key)
+
+
+Related human-written test context:
+### TEST FILE: pandas/tests/indexing/test_scalar.py
+""" test scalar indexing, including at and iat """
+from datetime import datetime, timedelta
+
+import numpy as np
+import pytest
+
+from pandas import DataFrame, Series, Timedelta, Timestamp, date_range, period_range
+import pandas._testing as tm
+from pandas.tests.indexing.common import Base
+
+
+class TestScalar(Base):
+    @pytest.mark.parametrize("kind", ["series", "frame"])
+    def test_at_and_iat_get(self, kind):
+        def _check(f, func, values=False):
+
+            if f is not None:
+                indices = self.generate_indices(f, values)
+                for i in indices:
+                    result = getattr(f, func)[i]
+                    expected = self.get_value(func, f, i, values)
+                    tm.assert_almost_equal(result, expected)
+
+        d = getattr(self, kind)
+
+        # iat
+        for f in [d["ints"], d["uints"]]:
+            _check(f, "iat", values=True)
+
+        for f in [d["labels"], d["ts"], d["floats"]]:
+            if f is not None:
+                msg = "iAt based indexing can only have integer indexers"
+                with pytest.raises(ValueError, match=msg):
+                    self.check_values(f, "iat")
+
+        # at
+        for f in [d["ints"], d["uints"], d["labels"], d["ts"], d["floats"]]:
+            _check(f, "at")
+
+    @pytest.mark.parametrize("kind", ["series", "frame"])
+    def test_at_and_iat_set(self, kind):
+        def _check(f, func, values=False):
+
+            if f is not None:
+                indices = self.generate_indices(f, values)
+                for i in indices:
+                    getattr(f, func)[i] = 1
+                    expected = self.get_value(func, f, i, values)
+                    tm.assert_almost_equal(expected, 1)
+
+        d = getattr(self, kind)
+
+        # iat
+        for f in [d["ints"], d["uints"]]:
+            _check(f, "iat", values=True)
+
+        for f in [d["labels"], d["ts"], d["floats"]]:
+            if f is not None:
+                msg = "iAt based indexing can only have integer indexers"
+                with pytest.raises(ValueError, match=msg):
+                    _check(f, "iat")
+
+        # at
+        for f in [d["ints"], d["uints"], d["labels"], d["ts"], d["floats"]]:
+            _check(f, "at")
+
+
+class TestScalar2:
+    # TODO: Better name, just separating things that dont need Base class
+
+    def test_at_iat_coercion(self):
+
+        # as timestamp is not a tuple!
+        dates = date_range("1/1/2000", periods=8)
+        df = DataFrame(np.random.randn(8, 4), index=dates, columns=["A", "B", "C", "D"])
+        s = df["A"]
+
+        result = s.at[dates[5]]
+        xp = s.values[5]
+        assert result == xp
+
+        # GH 7729
+        # make sure we are boxing the returns
+        s = Series(["2014-01-01", "2014-02-02"], dtype="datetime64[ns]")
+        expected = Timestamp("2014-02-02")
+
+        for r in [lambda: s.iat[1], lambda: s.iloc[1]]:
+            result = r()
+            assert result == expected
+
+        s = Series(["1 days", "2 days"], dtype="timedelta64[ns]")
+        expected = Timedelta("2 days")
+
+        for r in [lambda: s.iat[1], lambda: s.iloc[1]]:
+            result = r()
+            assert result == expected
+
+    def test_iat_invalid_args(self):
+        pass
+
+    def test_imethods_with_dups(self):
+
+        # GH6493
+        # iat/iloc with dups
+
+        s = Series(range(5), index=[1, 1, 2, 2, 3], dtype="int64")
+        result = s.iloc[2]
+        assert result == 2
+        result = s.iat[2]
+        assert result == 2
+
+        msg = "index 10 is out of bounds for axis 0 with size 5"
+        with pytest.raises(IndexError, match=msg):
+            s.iat[10]
+        msg = "index -10 is out of bounds for axis 0 with size 5"
+        with pytest.raises(IndexError, match=msg):
+            s.iat[-10]
+
+        result = s.iloc[[2, 3]]
+        expected = Series([2, 3], [2, 2], dtype="int64")
+        tm.assert_series_equal(result, expected)
+
+        df = s.to_frame()
+        result = df.iloc[2]
+        expected = Series(2, index=[0], name=2)
+        tm.assert_series_equal(result, expected)
+
+        result = df.iat[2, 0]
+        assert result == 2
+
+    def test_frame_at_with_duplicate_axes(self):
+        # GH#33041
+        arr = np.random.randn(6).reshape(3, 2)
+        df = DataFrame(arr, columns=["A", "A"])
+
+        result = df.at[0, "A"]
+        expected = df.iloc[0]
+
+        tm.assert_series_equal(result, expected)
+
+        result = df.T.at["A", 0]
+        tm.assert_series_equal(result, expected)
+
+        # setter
+        df.at[1, "A"] = 2
+        expected = Series([2.0, 2.0], index=["A", "A"], name=1)
+        tm.assert_series_equal(df.iloc[1], expected)
+
+    def test_frame_at_with_duplicate_axes_requires_scalar_lookup(self):
+        # GH#33041 check that falling back to loc doesn't allow non-scalar
+        #  args to slip in
+
+        arr = np.random.randn(6).reshape(3, 2)
+        df = DataFrame(arr, columns=["A", "A"])
+
+        msg = "Invalid call for scalar access"
+        with pytest.raises(ValueError, match=msg):
+            df.at[[1, 2]]
+        with pytest.raises(ValueError, match=msg):
+            df.at[1, ["A"]]
+        with pytest.raises(ValueError, match=msg):
+            df.at[:, "A"]
+
+        with pytest.raises(ValueError, match=msg):
+            df.at[[1, 2]] = 1
+        with pytest.raises(ValueError, match=msg):
+            df.at[1, ["A"]] = 1
+        with pytest.raises(ValueError, match=msg):
+            df.at[:, "A"] = 1
+
+    def test_series_at_raises_type_error(self):
+        # at should not fallback
+        # GH 7814
+        # GH#31724 .at should match .loc
+        ser = Series([1, 2, 3], index=list("abc"))
+        result = ser.at["a"]
+        assert result == 1
+        result = ser.loc["a"]
+        assert result == 1
+
+        with pytest.raises(KeyError, match="^0$"):
+            ser.at[0]
+        with pytest.raises(KeyError, match="^0$"):
+            ser.loc[0]
+
+    def test_frame_raises_key_error(self):
+        # GH#31724 .at should match .loc
+        df = DataFrame({"A": [1, 2, 3]}, index=list("abc"))
+        result = df.at["a", "A"]
+        assert result == 1
+        result = df.loc["a", "A"]
+        assert result == 1
+
+        with pytest.raises(KeyError, match="^0$"):
+            df.at["a", 0]
+        with pytest.raises(KeyError, match="^0$"):
+            df.loc["a", 0]
+
+    def test_series_at_raises_key_error(self):
+        # GH#31724 .at should match .loc
+
+        ser = Series([1, 2, 3], index=[3, 2, 1])
+        result = ser.at[1]
+        assert result == 3
+        result = ser.loc[1]
+        assert result == 3
+
+        with pytest.raises(KeyError, match="a"):
+            ser.at["a"]
+        with pytest.raises(KeyError, match="a"):
+            # .at should match .loc
+            ser.loc["a"]
+
+    def test_frame_at_raises_key_error(self):
+        # GH#31724 .at should match .loc
+
+        df = DataFrame({0: [1, 2, 3]}, index=[3, 2, 1])
+
+        result = df.at[1, 0]
+        assert result == 3
+
+Repository test style notes:
+- Repository appears to use pytest-style test organization.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

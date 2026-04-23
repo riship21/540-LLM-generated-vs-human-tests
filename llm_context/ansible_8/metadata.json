@@ -1,0 +1,22 @@
+{
+  "project": "ansible",
+  "bug_id": "8",
+  "slug": "ansible_8",
+  "status_final": "maybe",
+  "recommended_status": "maybe",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_8\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_8\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/plugins/shell/test_powershell.py"
+  ],
+  "source_file_paths": [
+    "lib/ansible/plugins/shell/powershell.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"test/units/plugins/shell/test_powershell.py\"",
+  "buggy_commit": "\"81378b3e744cd0d13b33d18a4f8a38aeb8a6e97a\"",
+  "fixed_commit": "\"fc7980af9a42676913b4054163570ee438b82e9c\""
+}

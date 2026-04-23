@@ -1,0 +1,233 @@
+{
+  "project": "ansible",
+  "bug_id": "5",
+  "slug": "ansible_5",
+  "bug_info": {
+    "python_version": "\"3.6.9\"",
+    "pythonpath": "\"ansible/build/lib/\"",
+    "buggy_commit_id": "\"2af76f16be8cf2239daaec4c2f31c3dcb4e3469e\"",
+    "fixed_commit_id": "\"3c3ffc09c203d1b2262f6a319cceadd727749761\"",
+    "test_file": "\"test/units/module_utils/common/validation/test_check_required_arguments.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\ansible_5.patch",
+  "files_changed": 2,
+  "source_files_changed": 1,
+  "test_files_changed": 1,
+  "human_test_added": false,
+  "human_test_modified": true,
+  "source_files": [
+    {
+      "old_path": "lib/ansible/module_utils/common/validation.py",
+      "new_path": "lib/ansible/module_utils/common/validation.py",
+      "display_path": "lib/ansible/module_utils/common/validation.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 1,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -189,7 +189,7 @@ def check_required_arguments(argument_spec, module_parameters):",
+          "lines": [
+            "             missing.append(k)",
+            " ",
+            "     if missing:",
+            "-        msg = \"missing required arguments: %s\" % \", \".join(missing)",
+            "+        msg = \"missing required arguments: %s\" % \", \".join(sorted(missing))",
+            "         raise TypeError(to_native(msg))",
+            " ",
+            "     return missing"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [
+    {
+      "old_path": "test/units/module_utils/common/validation/test_check_mutually_exclusive.py",
+      "new_path": "test/units/module_utils/common/validation/test_check_mutually_exclusive.py",
+      "display_path": "test/units/module_utils/common/validation/test_check_mutually_exclusive.py",
+      "change_type": "modified",
+      "is_test_file": true,
+      "added_lines": 4,
+      "deleted_lines": 3,
+      "added_assertions": [
+        "assert \"'NoneType' object is not iterable\" in to_native(te.value)",
+        "assert to_native(e.value) == expected"
+      ],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -34,11 +34,12 @@ def test_check_mutually_exclusive_found(mutually_exclusive_terms):",
+          "lines": [
+            "         'fox': 'red',",
+            "         'socks': 'blue',",
+            "     }",
+            "-    expected = \"TypeError('parameters are mutually exclusive: string1|string2, box|fox|socks',)\"",
+            "+    expected = \"parameters are mutually exclusive: string1|string2, box|fox|socks\"",
+            " ",
+            "     with pytest.raises(TypeError) as e:",
+            "         check_mutually_exclusive(mutually_exclusive_terms, params)",
+            "-        assert e.value == expected",
+            "+",
+            "+    assert to_native(e.value) == expected",
+            " ",
+            " ",
+            " def test_check_mutually_exclusive_none():"
+          ]
+        },
+        {
+          "header": "@@ -53,4 +54,4 @@ def test_check_mutually_exclusive_none():",
+          "lines": [
+            " def test_check_mutually_exclusive_no_params(mutually_exclusive_terms):",
+            "     with pytest.raises(TypeError) as te:",
+            "         check_mutually_exclusive(mutually_exclusive_terms, None)",
+            "-        assert \"TypeError: 'NoneType' object is not iterable\" in to_native(te.error)",
+            "+    assert \"'NoneType' object is not iterable\" in to_native(te.value)"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "all_files": [
+    {
+      "old_path": "lib/ansible/module_utils/common/validation.py",
+      "new_path": "lib/ansible/module_utils/common/validation.py",
+      "display_path": "lib/ansible/module_utils/common/validation.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 1,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -189,7 +189,7 @@ def check_required_arguments(argument_spec, module_parameters):",
+          "lines": [
+            "             missing.append(k)",
+            " ",
+            "     if missing:",
+            "-        msg = \"missing required arguments: %s\" % \", \".join(missing)",
+            "+        msg = \"missing required arguments: %s\" % \", \".join(sorted(missing))",
+            "         raise TypeError(to_native(msg))",
+            " ",
+            "     return missing"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    },
+    {
+      "old_path": "test/units/module_utils/common/validation/test_check_mutually_exclusive.py",
+      "new_path": "test/units/module_utils/common/validation/test_check_mutually_exclusive.py",
+      "display_path": "test/units/module_utils/common/validation/test_check_mutually_exclusive.py",
+      "change_type": "modified",
+      "is_test_file": true,
+      "added_lines": 4,
+      "deleted_lines": 3,
+      "added_assertions": [
+        "assert \"'NoneType' object is not iterable\" in to_native(te.value)",
+        "assert to_native(e.value) == expected"
+      ],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -34,11 +34,12 @@ def test_check_mutually_exclusive_found(mutually_exclusive_terms):",
+          "lines": [
+            "         'fox': 'red',",
+            "         'socks': 'blue',",
+            "     }",
+            "-    expected = \"TypeError('parameters are mutually exclusive: string1|string2, box|fox|socks',)\"",
+            "+    expected = \"parameters are mutually exclusive: string1|string2, box|fox|socks\"",
+            " ",
+            "     with pytest.raises(TypeError) as e:",
+            "         check_mutually_exclusive(mutually_exclusive_terms, params)",
+            "-        assert e.value == expected",
+            "+",
+            "+    assert to_native(e.value) == expected",
+            " ",
+            " ",
+            " def test_check_mutually_exclusive_none():"
+          ]
+        },
+        {
+          "header": "@@ -53,4 +54,4 @@ def test_check_mutually_exclusive_none():",
+          "lines": [
+            " def test_check_mutually_exclusive_no_params(mutually_exclusive_terms):",
+            "     with pytest.raises(TypeError) as te:",
+            "         check_mutually_exclusive(mutually_exclusive_terms, None)",
+            "-        assert \"TypeError: 'NoneType' object is not iterable\" in to_native(te.error)",
+            "+    assert \"'NoneType' object is not iterable\" in to_native(te.value)"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "changed_test_file",
+      "file": "test/units/module_utils/common/validation/test_check_mutually_exclusive.py",
+      "change_type": "modified",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [
+        "assert \"'NoneType' object is not iterable\" in to_native(te.value)",
+        "assert to_native(e.value) == expected"
+      ],
+      "requested_tests": [],
+      "matched_test_names": [],
+      "extracted_functions": [],
+      "file_preview": "# -*- coding: utf-8 -*-\n# Copyright (c) 2019 Ansible Project\n# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)\n\nfrom __future__ import absolute_import, division, print_function\n__metaclass__ = type\n\nimport pytest\n\nfrom ansible.module_utils._text import to_native\nfrom ansible.module_utils.common.validation import check_mutually_exclusive\n\n\n@pytest.fixture\ndef mutually_exclusive_terms():\n    return [\n        ('string1', 'string2',),\n        ('box', 'fox', 'socks'),\n    ]\n\n\ndef test_check_mutually_exclusive(mutually_exclusive_terms):\n    params = {\n        'string1': 'cat',\n        'fox': 'hat',\n    }\n    assert check_mutually_exclusive(mutually_exclusive_terms, params) == []\n\n\ndef test_check_mutually_exclusive_found(mutually_exclusive_terms):\n    params = {\n        'string1': 'cat',\n        'string2': 'hat',\n        'fox': 'red',\n        'socks': 'blue',\n    }\n    expected = \"parameters are mutually exclusive: string1|string2, box|fox|socks\"\n\n    with pytest.raises(TypeError) as e:\n        check_mutually_exclusive(mutually_exclusive_terms, params)\n\n    assert to_native(e.value) == expected\n\n\ndef test_check_mutually_exclusive_none():\n    terms = None\n    params = {\n        'string1': 'cat',\n        'fox': 'hat',\n    }\n    assert check_mutually_exclusive(terms, params) == []\n\n\ndef test_check_mutually_exclusive_no_params(mutually_exclusive_terms):\n    with pytest.raises(TypeError) as te:\n        check_mutually_exclusive(mutually_exclusive_terms, None)\n    assert \"'NoneType' object is not iterable\" in to_native(te.value)"
+    },
+    {
+      "source": "failing_test_reference",
+      "file": "test/units/module_utils/common/validation/test_check_required_arguments.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_check_required_arguments"
+      ],
+      "matched_test_names": [
+        "test_check_required_arguments"
+      ],
+      "matched_qualnames": [
+        "test_check_required_arguments"
+      ],
+      "extracted_functions": [
+        {
+          "name": "test_check_required_arguments",
+          "qualname": "test_check_required_arguments",
+          "class_name": null,
+          "start_line": 44,
+          "end_line": 49,
+          "body": "def test_check_required_arguments(arguments_terms):\n    params = {\n        'foo': 'hello',\n        'bar': 'haha',\n    }\n    assert check_required_arguments(arguments_terms, params) == []"
+        }
+      ],
+      "file_preview": "# -*- coding: utf-8 -*-\n# Copyright (c) 2020 Ansible Project\n# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)\n\nfrom __future__ import absolute_import, division, print_function\n__metaclass__ = type\n\nimport pytest\n\nfrom ansible.module_utils._text import to_native\nfrom ansible.module_utils.common.validation import check_required_arguments\n\n\n@pytest.fixture\ndef arguments_terms():\n    return {\n        'foo': {\n            'required': True,\n        },\n        'bar': {\n            'required': False,\n        },\n        'tomato': {\n            'irrelevant': 72,\n        },\n    }\n\n\n@pytest.fixture\ndef arguments_terms_multiple():\n    return {\n        'foo': {\n            'required': True,\n        },\n        'bar': {\n            'required': True,\n        },\n        'tomato': {\n            'irrelevant': 72,\n        },\n    }\n\n\ndef test_check_required_arguments(arguments_terms):\n    params = {\n        'foo': 'hello',\n        'bar': 'haha',\n    }\n    assert check_required_arguments(arguments_terms, params) == []\n\n\ndef test_check_required_arguments_missing(arguments_terms):\n    params = {\n        'apples': 'woohoo',\n    }\n    expected = \"missing required arguments: foo\"\n\n    with pytest.raises(TypeError) as e:\n        check_required_arguments(arguments_terms, params)\n\n    assert to_native(e.value) == expected\n\n\ndef test_check_required_arguments_missing_multiple(arguments_terms_multiple):\n    params = {\n        'apples': 'woohoo',\n    }\n    expected = \"missing required arguments: bar, foo\"\n\n    with pytest.raises(TypeError) as e:\n        check_required_arguments(arguments_terms_multiple, params)\n\n    assert to_native(e.value) == expected\n\n\ndef test_check_required_arguments_missing_none():\n    terms = None\n    params = {\n        'foo': 'bar',\n        'baz': 'buzz',\n    }\n    assert check_required_arguments(terms, params) == []\n\n\ndef test_check_required_arguments_no_params(arguments_terms):\n    with pytest.raises(TypeError) as te:\n        check_required_arguments(arguments_terms, None)\n    assert \"'NoneType' is not iterable\" in to_native(te.value)",
+      "raw_failing_test_reference": "\"test/units/module_utils/common/validation/test_check_required_arguments.py\""
+    }
+  ],
+  "human_test_names": [
+    "test_check_required_arguments"
+  ],
+  "human_test_files": [
+    "test/units/module_utils/common/validation/test_check_mutually_exclusive.py",
+    "test/units/module_utils/common/validation/test_check_required_arguments.py"
+  ],
+  "human_test_count": 1,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": true
+}

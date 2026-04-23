@@ -1,0 +1,27 @@
+### TEST: TestDataFrameReplace.test_replace (pandas/tests/frame/methods/test_replace.py)
+    def test_replace(self, datetime_frame):
+        datetime_frame["A"][:5] = np.nan
+        datetime_frame["A"][-5:] = np.nan
+
+        zero_filled = datetime_frame.replace(np.nan, -1e8)
+        tm.assert_frame_equal(zero_filled, datetime_frame.fillna(-1e8))
+        tm.assert_frame_equal(zero_filled.replace(-1e8, np.nan), datetime_frame)
+
+        datetime_frame["A"][:5] = np.nan
+        datetime_frame["A"][-5:] = np.nan
+        datetime_frame["B"][:5] = -1e8
+
+        # empty
+        df = DataFrame(index=["a", "b"])
+        tm.assert_frame_equal(df, df.replace(5, 7))
+
+        # GH 11698
+        # test for mixed data types.
+        df = pd.DataFrame(
+            [("-", pd.to_datetime("20150101")), ("a", pd.to_datetime("20150102"))]
+        )
+        df1 = df.replace("-", np.nan)
+        expected_df = pd.DataFrame(
+            [(np.nan, pd.to_datetime("20150101")), ("a", pd.to_datetime("20150102"))]
+        )
+        tm.assert_frame_equal(df1, expected_df)

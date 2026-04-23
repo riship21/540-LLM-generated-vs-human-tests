@@ -1,0 +1,135 @@
+{
+  "project": "ansible",
+  "bug_id": "10",
+  "slug": "ansible_10",
+  "bug_info": {
+    "python_version": "\"3.6.9\"",
+    "pythonpath": "\"ansible/build/lib/\"",
+    "buggy_commit_id": "\"e368f788f71c338cd3f049d5d6bdc643a51c0514\"",
+    "fixed_commit_id": "\"a4b59d021368285490f7cda50c11ac4f7a8030b5\"",
+    "test_file": "\"test/units/modules/system/test_pamd.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\ansible_10.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "lib/ansible/modules/system/pamd.py",
+      "new_path": "lib/ansible/modules/system/pamd.py",
+      "display_path": "lib/ansible/modules/system/pamd.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 4,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -351,6 +351,8 @@ class PamdRule(PamdLine):",
+          "lines": [
+            "     valid_control_actions = ['ignore', 'bad', 'die', 'ok', 'done', 'reset']",
+            " ",
+            "     def __init__(self, rule_type, rule_control, rule_path, rule_args=None):",
+            "+        self.prev = None",
+            "+        self.next = None",
+            "         self._control = None",
+            "         self._args = None",
+            "         self.rule_type = rule_type"
+          ]
+        },
+        {
+          "header": "@@ -478,7 +480,8 @@ class PamdService(object):",
+          "lines": [
+            "             if current_line.matches(rule_type, rule_control, rule_path):",
+            "                 if current_line.prev is not None:",
+            "                     current_line.prev.next = current_line.next",
+            "-                    current_line.next.prev = current_line.prev",
+            "+                    if current_line.next is not None:",
+            "+                        current_line.next.prev = current_line.prev",
+            "                 else:",
+            "                     self._head = current_line.next",
+            "                     current_line.next.prev = None"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "lib/ansible/modules/system/pamd.py",
+      "new_path": "lib/ansible/modules/system/pamd.py",
+      "display_path": "lib/ansible/modules/system/pamd.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 4,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -351,6 +351,8 @@ class PamdRule(PamdLine):",
+          "lines": [
+            "     valid_control_actions = ['ignore', 'bad', 'die', 'ok', 'done', 'reset']",
+            " ",
+            "     def __init__(self, rule_type, rule_control, rule_path, rule_args=None):",
+            "+        self.prev = None",
+            "+        self.next = None",
+            "         self._control = None",
+            "         self._args = None",
+            "         self.rule_type = rule_type"
+          ]
+        },
+        {
+          "header": "@@ -478,7 +480,8 @@ class PamdService(object):",
+          "lines": [
+            "             if current_line.matches(rule_type, rule_control, rule_path):",
+            "                 if current_line.prev is not None:",
+            "                     current_line.prev.next = current_line.next",
+            "-                    current_line.next.prev = current_line.prev",
+            "+                    if current_line.next is not None:",
+            "+                        current_line.next.prev = current_line.prev",
+            "                 else:",
+            "                     self._head = current_line.next",
+            "                     current_line.next.prev = None"
+          ]
+        }
+      ],
+      "hunk_count": 2
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=none",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "test/units/modules/system/test_pamd.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_pamd"
+      ],
+      "matched_test_names": [],
+      "matched_qualnames": [],
+      "extracted_functions": [],
+      "file_preview": "",
+      "raw_failing_test_reference": "\"test/units/modules/system/test_pamd.py\""
+    }
+  ],
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/modules/system/test_pamd.py"
+  ],
+  "human_test_count": 0,
+  "human_test_baseline_quality": "none",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}

@@ -1,0 +1,220 @@
+### TEST FILE: test/test_utils.py
+#!/usr/bin/env python
+# coding: utf-8
+
+from __future__ import unicode_literals
+
+# Allow direct execution
+import os
+import sys
+import unittest
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+# Various small unit tests
+import io
+import json
+import xml.etree.ElementTree
+
+from youtube_dl.utils import (
+    age_restricted,
+    args_to_str,
+    clean_html,
+    DateRange,
+    detect_exe_version,
+    encodeFilename,
+    escape_rfc3986,
+    escape_url,
+    ExtractorError,
+    find_xpath_attr,
+    fix_xml_ampersands,
+    InAdvancePagedList,
+    intlist_to_bytes,
+    is_html,
+    js_to_json,
+    limit_length,
+    OnDemandPagedList,
+    orderedSet,
+    parse_duration,
+    parse_filesize,
+    parse_iso8601,
+    read_batch_urls,
+    sanitize_filename,
+    sanitize_path,
+    prepend_extension,
+    replace_extension,
+    shell_quote,
+    smuggle_url,
+    str_to_int,
+    strip_jsonp,
+    struct_unpack,
+    timeconvert,
+    unescapeHTML,
+    unified_strdate,
+    unsmuggle_url,
+    uppercase_escape,
+    lowercase_escape,
+    url_basename,
+    urlencode_postdata,
+    version_tuple,
+    xpath_with_ns,
+    xpath_element,
+    xpath_text,
+    xpath_attr,
+    render_table,
+    match_str,
+    parse_dfxp_time_expr,
+    dfxp2srt,
+    cli_option,
+    cli_valueless_option,
+    cli_bool_option,
+)
+
+
+class TestUtil(unittest.TestCase):
+    def test_timeconvert(self):
+        self.assertTrue(timeconvert('') is None)
+        self.assertTrue(timeconvert('bougrg') is None)
+
+    def test_sanitize_filename(self):
+        self.assertEqual(sanitize_filename('abc'), 'abc')
+        self.assertEqual(sanitize_filename('abc_d-e'), 'abc_d-e')
+
+        self.assertEqual(sanitize_filename('123'), '123')
+
+        self.assertEqual('abc_de', sanitize_filename('abc/de'))
+        self.assertFalse('/' in sanitize_filename('abc/de///'))
+
+        self.assertEqual('abc_de', sanitize_filename('abc/<>\\*|de'))
+        self.assertEqual('xxx', sanitize_filename('xxx/<>\\*|'))
+        self.assertEqual('yes no', sanitize_filename('yes? no'))
+        self.assertEqual('this - that', sanitize_filename('this: that'))
+
+        self.assertEqual(sanitize_filename('AT&T'), 'AT&T')
+        aumlaut = 'ä'
+        self.assertEqual(sanitize_filename(aumlaut), aumlaut)
+        tests = '\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0446\u0430'
+        self.assertEqual(sanitize_filename(tests), tests)
+
+        self.assertEqual(
+            sanitize_filename('New World record at 0:12:34'),
+            'New World record at 0_12_34')
+
+        self.assertEqual(sanitize_filename('--gasdgf'), '_-gasdgf')
+        self.assertEqual(sanitize_filename('--gasdgf', is_id=True), '--gasdgf')
+        self.assertEqual(sanitize_filename('.gasdgf'), 'gasdgf')
+        self.assertEqual(sanitize_filename('.gasdgf', is_id=True), '.gasdgf')
+
+        forbidden = '"\0\\/'
+        for fc in forbidden:
+            for fbc in forbidden:
+                self.assertTrue(fbc not in sanitize_filename(fc))
+
+    def test_sanitize_filename_restricted(self):
+        self.assertEqual(sanitize_filename('abc', restricted=True), 'abc')
+        self.assertEqual(sanitize_filename('abc_d-e', restricted=True), 'abc_d-e')
+
+        self.assertEqual(sanitize_filename('123', restricted=True), '123')
+
+        self.assertEqual('abc_de', sanitize_filename('abc/de', restricted=True))
+        self.assertFalse('/' in sanitize_filename('abc/de///', restricted=True))
+
+        self.assertEqual('abc_de', sanitize_filename('abc/<>\\*|de', restricted=True))
+        self.assertEqual('xxx', sanitize_filename('xxx/<>\\*|', restricted=True))
+        self.assertEqual('yes_no', sanitize_filename('yes? no', restricted=True))
+        self.assertEqual('this_-_that', sanitize_filename('this: that', restricted=True))
+
+        tests = 'a\xe4b\u4e2d\u56fd\u7684c'
+        self.assertEqual(sanitize_filename(tests, restricted=True), 'a_b_c')
+        self.assertTrue(sanitize_filename('\xf6', restricted=True) != '')  # No empty filename
+
+        forbidden = '"\0\\/&!: \'\t\n()[]{}$;`^,#'
+        for fc in forbidden:
+            for fbc in forbidden:
+                self.assertTrue(fbc not in sanitize_filename(fc, restricted=True))
+
+        # Handle a common case more neatly
+        self.assertEqual(sanitize_filename('\u5927\u58f0\u5e26 - Song', restricted=True), 'Song')
+        self.assertEqual(sanitize_filename('\u603b\u7edf: Speech', restricted=True), 'Speech')
+        # .. but make sure the file name is never empty
+        self.assertTrue(sanitize_filename('-', restricted=True) != '')
+        self.assertTrue(sanitize_filename(':', restricted=True) != '')
+
+    def test_sanitize_ids(self):
+        self.assertEqual(sanitize_filename('_n_cd26wFpw', is_id=True), '_n_cd26wFpw')
+        self.assertEqual(sanitize_filename('_BD_eEpuzXw', is_id=True), '_BD_eEpuzXw')
+        self.assertEqual(sanitize_filename('N0Y__7-UOdI', is_id=True), 'N0Y__7-UOdI')
+
+    def test_sanitize_path(self):
+        if sys.platform != 'win32':
+            return
+
+        self.assertEqual(sanitize_path('abc'), 'abc')
+        self.assertEqual(sanitize_path('abc/def'), 'abc\\def')
+        self.assertEqual(sanitize_path('abc\\def'), 'abc\\def')
+        self.assertEqual(sanitize_path('abc|def'), 'abc#def')
+        self.assertEqual(sanitize_path('<>:"|?*'), '#######')
+        self.assertEqual(sanitize_path('C:/abc/def'), 'C:\\abc\\def')
+        self.assertEqual(sanitize_path('C?:/abc/def'), 'C##\\abc\\def')
+
+        self.assertEqual(sanitize_path('\\\\?\\UNC\\ComputerName\\abc'), '\\\\?\\UNC\\ComputerName\\abc')
+        self.assertEqual(sanitize_path('\\\\?\\UNC/ComputerName/abc'), '\\\\?\\UNC\\ComputerName\\abc')
+
+        self.assertEqual(sanitize_path('\\\\?\\C:\\abc'), '\\\\?\\C:\\abc')
+        self.assertEqual(sanitize_path('\\\\?\\C:/abc'), '\\\\?\\C:\\abc')
+        self.assertEqual(sanitize_path('\\\\?\\C:\\ab?c\\de:f'), '\\\\?\\C:\\ab#c\\de#f')
+        self.assertEqual(sanitize_path('\\\\?\\C:\\abc'), '\\\\?\\C:\\abc')
+
+        self.assertEqual(
+            sanitize_path('youtube/%(uploader)s/%(autonumber)s-%(title)s-%(upload_date)s.%(ext)s'),
+            'youtube\\%(uploader)s\\%(autonumber)s-%(title)s-%(upload_date)s.%(ext)s')
+
+        self.assertEqual(
+            sanitize_path('youtube/TheWreckingYard ./00001-Not bad, Especially for Free! (1987 Yamaha 700)-20141116.mp4.part'),
+            'youtube\\TheWreckingYard #\\00001-Not bad, Especially for Free! (1987 Yamaha 700)-20141116.mp4.part')
+        self.assertEqual(sanitize_path('abc/def...'), 'abc\\def..#')
+        self.assertEqual(sanitize_path('abc.../def'), 'abc..#\\def')
+        self.assertEqual(sanitize_path('abc.../def...'), 'abc..#\\def..#')
+
+        self.assertEqual(sanitize_path('../abc'), '..\\abc')
+        self.assertEqual(sanitize_path('../../abc'), '..\\..\\abc')
+        self.assertEqual(sanitize_path('./abc'), 'abc')
+        self.assertEqual(sanitize_path('./../abc'), '..\\abc')
+
+    def test_prepend_extension(self):
+        self.assertEqual(prepend_extension('abc.ext', 'temp'), 'abc.temp.ext')
+        self.assertEqual(prepend_extension('abc.ext', 'temp', 'ext'), 'abc.temp.ext')
+        self.assertEqual(prepend_extension('abc.unexpected_ext', 'temp', 'ext'), 'abc.unexpected_ext.temp')
+        self.assertEqual(prepend_extension('abc', 'temp'), 'abc.temp')
+        self.assertEqual(prepend_extension('.abc', 'temp'), '.abc.temp')
+        self.assertEqual(prepend_extension('.abc.ext', 'temp'), '.abc.temp.ext')
+
+    def test_replace_extension(self):
+        self.assertEqual(replace_extension('abc.ext', 'temp'), 'abc.temp')
+        self.assertEqual(replace_extension('abc.ext', 'temp', 'ext'), 'abc.temp')
+        self.assertEqual(replace_extension('abc.unexpected_ext', 'temp', 'ext'), 'abc.unexpected_ext.temp')
+        self.assertEqual(replace_extension('abc', 'temp'), 'abc.temp')
+        self.assertEqual(replace_extension('.abc', 'temp'), '.abc.temp')
+        self.assertEqual(replace_extension('.abc.ext', 'temp'), '.abc.temp')
+
+    def test_ordered_set(self):
+        self.assertEqual(orderedSet([1, 1, 2, 3, 4, 4, 5, 6, 7, 3, 5]), [1, 2, 3, 4, 5, 6, 7])
+        self.assertEqual(orderedSet([]), [])
+        self.assertEqual(orderedSet([1]), [1])
+        # keep the list ordered
+        self.assertEqual(orderedSet([135, 1, 1, 1]), [135, 1])
+
+    def test_unescape_html(self):
+        self.assertEqual(unescapeHTML('%20;'), '%20;')
+        self.assertEqual(unescapeHTML('&#x2F;'), '/')
+        self.assertEqual(unescapeHTML('&#47;'), '/')
+        self.assertEqual(
+            unescapeHTML('&eacute;'), 'é')
+
+    def test_daterange(self):
+        _20century = DateRange("19000101", "20000101")
+        self.assertFalse("17890714" in _20century)
+        _ac = DateRange("00010101")
+        self.assertTrue("19690721" in _ac)
+        _firstmilenium = DateRange(end="10000101")
+        self.assertTrue("07110427" in _firstmilenium)

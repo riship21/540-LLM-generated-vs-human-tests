@@ -1,0 +1,48 @@
+### FILE: pandas/core/groupby/grouper.py
+734: 
+735:     groupings: List[Grouping] = []
+736:     exclusions: List[Hashable] = []
+737: 
+738:     # if the actual grouper should be obj[key]
+739:     def is_in_axis(key) -> bool:
+740:         if not _is_label_like(key):
+741:             # items -> .columns for DataFrame, .index for Series
+742:             items = obj.axes[-1]
+743:             try:
+744:                 items.get_loc(key)
+745:             except (KeyError, TypeError, InvalidIndexError):
+746:                 # TypeError shows up here if we pass e.g. Int64Index
+747:                 return False
+748: 
+749:         return True
+750: 
+751:     # if the grouper is obj[name]
+752:     def is_in_obj(gpr) -> bool:
+753:         if not hasattr(gpr, "name"):
+754:             return False
+755:         try:
+756:             return gpr is obj[gpr.name]
+757:         except (KeyError, IndexError):
+758:             return False
+759: 
+760:     for i, (gpr, level) in enumerate(zip(keys, levels)):
+761: 
+762:         if is_in_obj(gpr):  # df.groupby(df['name'])
+763:             in_axis, name = True, gpr.name
+764:             exclusions.append(name)
+765: 
+766:         elif is_in_axis(gpr):  # df.groupby('name')
+767:             if gpr in obj:
+768:                 if validate:
+769:                     obj._check_label_or_level_ambiguity(gpr, axis=axis)
+770:                 in_axis, name, gpr = True, gpr, obj[gpr]
+771:                 exclusions.append(name)
+772:             elif obj._is_level_reference(gpr, axis=axis):
+773:                 in_axis, name, level, gpr = False, None, gpr, None
+774:             else:
+775:                 raise KeyError(gpr)
+776:         elif isinstance(gpr, Grouper) and gpr.key is not None:
+777:             # Add key to exclusions
+778:             exclusions.append(gpr.key)
+779:             in_axis, name = False, None
+780:         else:

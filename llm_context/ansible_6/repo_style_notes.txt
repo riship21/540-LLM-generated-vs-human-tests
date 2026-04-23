@@ -1,0 +1,3 @@
+- Follow the existing repository test style visible in the provided examples.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

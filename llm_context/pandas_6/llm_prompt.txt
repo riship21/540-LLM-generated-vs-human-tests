@@ -1,0 +1,95 @@
+You are given a real historical bug from a Python project.
+
+Your task is to generate a unit test that would expose the bug in the buggy version.
+
+Rules:
+- Generate only test code.
+- Follow the repository's existing test style.
+- Do not modify production code.
+- Focus on a minimal regression test.
+- Reuse naming, imports, and assertion style from nearby human-written tests when helpful.
+
+Project: pandas
+Bug ID: 6
+Slug: pandas_6
+
+Relevant buggy source context:
+### FILE: pandas/core/groupby/grouper.py
+734: 
+735:     groupings: List[Grouping] = []
+736:     exclusions: List[Hashable] = []
+737: 
+738:     # if the actual grouper should be obj[key]
+739:     def is_in_axis(key) -> bool:
+740:         if not _is_label_like(key):
+741:             # items -> .columns for DataFrame, .index for Series
+742:             items = obj.axes[-1]
+743:             try:
+744:                 items.get_loc(key)
+745:             except (KeyError, TypeError, InvalidIndexError):
+746:                 # TypeError shows up here if we pass e.g. Int64Index
+747:                 return False
+748: 
+749:         return True
+750: 
+751:     # if the grouper is obj[name]
+752:     def is_in_obj(gpr) -> bool:
+753:         if not hasattr(gpr, "name"):
+754:             return False
+755:         try:
+756:             return gpr is obj[gpr.name]
+757:         except (KeyError, IndexError):
+758:             return False
+759: 
+760:     for i, (gpr, level) in enumerate(zip(keys, levels)):
+761: 
+762:         if is_in_obj(gpr):  # df.groupby(df['name'])
+763:             in_axis, name = True, gpr.name
+764:             exclusions.append(name)
+765: 
+766:         elif is_in_axis(gpr):  # df.groupby('name')
+767:             if gpr in obj:
+768:                 if validate:
+769:                     obj._check_label_or_level_ambiguity(gpr, axis=axis)
+770:                 in_axis, name, gpr = True, gpr, obj[gpr]
+771:                 exclusions.append(name)
+772:             elif obj._is_level_reference(gpr, axis=axis):
+773:                 in_axis, name, level, gpr = False, None, gpr, None
+774:             else:
+775:                 raise KeyError(gpr)
+776:         elif isinstance(gpr, Grouper) and gpr.key is not None:
+777:             # Add key to exclusions
+778:             exclusions.append(gpr.key)
+779:             in_axis, name = False, None
+780:         else:
+
+Bug-fix patch:
+diff --git a/pandas/core/groupby/grouper.py b/pandas/core/groupby/grouper.py
+index 9660fb9c2..39892d87b 100644
+--- a/pandas/core/groupby/grouper.py
++++ b/pandas/core/groupby/grouper.py
+@@ -754,7 +754,9 @@ def get_grouper(
+             return False
+         try:
+             return gpr is obj[gpr.name]
+-        except (KeyError, IndexError):
++        except (KeyError, IndexError, ValueError):
++            # TODO: ValueError: Given date string not likely a datetime.
++            # should be KeyError?
+             return False
+ 
+     for i, (gpr, level) in enumerate(zip(keys, levels)):
+
+
+Related human-written test context:
+### TEST: test_size (pandas/tests/groupby/test_size.py)
+def test_size(df, by):
+    grouped = df.groupby(by=by)
+    result = grouped.size()
+    for key, group in grouped:
+        assert result[key] == len(group)
+
+Repository test style notes:
+- Repository appears to use pytest-style test organization.
+- Generate only test code, not explanations.
+- Prefer a focused regression test that targets the changed behavior.

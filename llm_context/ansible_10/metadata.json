@@ -1,0 +1,22 @@
+{
+  "project": "ansible",
+  "bug_id": "10",
+  "slug": "ansible_10",
+  "status_final": "keep",
+  "recommended_status": "maybe",
+  "buggy_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_10\\buggy",
+  "fixed_checkout_path": "C:\\COSC540\\github_mining_starter\\workspace\\checkouts\\ansible_10\\fixed",
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_names": [],
+  "human_test_files": [
+    "test/units/modules/system/test_pamd.py"
+  ],
+  "source_file_paths": [
+    "lib/ansible/modules/system/pamd.py"
+  ],
+  "test_file_paths": [],
+  "failing_tests": "\"test/units/modules/system/test_pamd.py\"",
+  "buggy_commit": "\"e368f788f71c338cd3f049d5d6bdc643a51c0514\"",
+  "fixed_commit": "\"a4b59d021368285490f7cda50c11ac4f7a8030b5\""
+}

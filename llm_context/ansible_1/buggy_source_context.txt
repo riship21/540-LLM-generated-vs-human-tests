@@ -1,0 +1,47 @@
+### FILE: lib/ansible/galaxy/collection.py
+648: 
+649: 
+650: def verify_collections(collections, search_paths, apis, validate_certs, ignore_errors, allow_pre_release=False):
+651: 
+652:     with _display_progress():
+653:         with _tempdir() as b_temp_path:
+654:             for collection in collections:
+655:                 try:
+656: 
+657:                     local_collection = None
+658:                     b_collection = to_bytes(collection[0], errors='surrogate_or_strict')
+659: 
+660:                     if os.path.isfile(b_collection) or urlparse(collection[0]).scheme.lower() in ['http', 'https'] or len(collection[0].split('.')) != 2:
+661:                         raise AnsibleError(message="'%s' is not a valid collection name. The format namespace.name is expected." % collection[0])
+662: 
+663:                     collection_name = collection[0]
+664:                     namespace, name = collection_name.split('.')
+665:                     collection_version = collection[1]
+666: 
+667:                     # Verify local collection exists before downloading it from a galaxy server
+668:                     for search_path in search_paths:
+669:                         b_search_path = to_bytes(os.path.join(search_path, namespace, name), errors='surrogate_or_strict')
+670:                         if os.path.isdir(b_search_path):
+671:                             local_collection = CollectionRequirement.from_path(b_search_path, False)
+672:                             break
+673:                     if local_collection is None:
+674:                         raise AnsibleError(message='Collection %s is not installed in any of the collection paths.' % collection_name)
+675: 
+676:                     # Download collection on a galaxy server for comparison
+677:                     try:
+678:                         remote_collection = CollectionRequirement.from_name(collection_name, apis, collection_version, False, parent=None,
+679:                                                                             allow_pre_release=allow_pre_release)
+680:                     except AnsibleError as e:
+681:                         if e.message == 'Failed to find collection %s:%s' % (collection[0], collection[1]):
+682:                             raise AnsibleError('Failed to find remote collection %s:%s on any of the galaxy servers' % (collection[0], collection[1]))
+683:                         raise
+684: 
+685:                     download_url = remote_collection.metadata.download_url
+686:                     headers = {}
+687:                     remote_collection.api._add_auth_token(headers, download_url, required=False)
+688:                     b_temp_tar_path = _download_file(download_url, b_temp_path, None, validate_certs, headers=headers)
+689: 
+690:                     local_collection.verify(remote_collection, search_path, b_temp_tar_path)
+691: 
+692:                 except AnsibleError as err:
+693:                     if ignore_errors:

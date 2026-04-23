@@ -1,0 +1,96 @@
+### FILE: pandas/core/series.py
+4664: 
+4665:     def to_timestamp(self, freq=None, how="start", copy=True) -> "Series":
+4666:         """
+4667:         Cast to DatetimeIndex of Timestamps, at *beginning* of period.
+4668: 
+4669:         Parameters
+4670:         ----------
+4671:         freq : str, default frequency of PeriodIndex
+4672:             Desired frequency.
+4673:         how : {'s', 'e', 'start', 'end'}
+4674:             Convention for converting period to timestamp; start of period
+4675:             vs. end.
+4676:         copy : bool, default True
+4677:             Whether or not to return a copy.
+4678: 
+4679:         Returns
+4680:         -------
+4681:         Series with DatetimeIndex
+4682:         """
+4683:         new_values = self._values
+4684:         if copy:
+4685:             new_values = new_values.copy()
+4686: 
+4687:         assert isinstance(self.index, PeriodIndex)
+4688:         new_index = self.index.to_timestamp(freq=freq, how=how)  # type: ignore
+4689:         return self._constructor(new_values, index=new_index).__finalize__(
+4690:             self, method="to_timestamp"
+4691:         )
+4692: 
+4693:     def to_period(self, freq=None, copy=True) -> "Series":
+4694:         """
+4695:         Convert Series from DatetimeIndex to PeriodIndex with desired
+4696:         frequency (inferred from index if not passed).
+4697: 
+4698:         Parameters
+4699:         ----------
+4700:         freq : str, default None
+4701:             Frequency associated with the PeriodIndex.
+4702:         copy : bool, default True
+4703:             Whether or not to return a copy.
+4704: 
+4705:         Returns
+4706:         -------
+4707:         Series
+4708:             Series with index converted to PeriodIndex.
+4709:         """
+4710:         new_values = self._values
+
+4691:         )
+4692: 
+4693:     def to_period(self, freq=None, copy=True) -> "Series":
+4694:         """
+4695:         Convert Series from DatetimeIndex to PeriodIndex with desired
+4696:         frequency (inferred from index if not passed).
+4697: 
+4698:         Parameters
+4699:         ----------
+4700:         freq : str, default None
+4701:             Frequency associated with the PeriodIndex.
+4702:         copy : bool, default True
+4703:             Whether or not to return a copy.
+4704: 
+4705:         Returns
+4706:         -------
+4707:         Series
+4708:             Series with index converted to PeriodIndex.
+4709:         """
+4710:         new_values = self._values
+4711:         if copy:
+4712:             new_values = new_values.copy()
+4713: 
+4714:         assert isinstance(self.index, DatetimeIndex)
+4715:         new_index = self.index.to_period(freq=freq)  # type: ignore
+4716:         return self._constructor(new_values, index=new_index).__finalize__(
+4717:             self, method="to_period"
+4718:         )
+4719: 
+4720:     # ----------------------------------------------------------------------
+4721:     # Add index
+4722:     _AXIS_ORDERS = ["index"]
+4723:     _AXIS_REVERSED = False
+4724:     _AXIS_LEN = len(_AXIS_ORDERS)
+4725:     _info_axis_number = 0
+4726:     _info_axis_name = "index"
+4727: 
+4728:     index: "Index" = properties.AxisProperty(
+4729:         axis=0, doc="The index (axis labels) of the Series."
+4730:     )
+4731: 
+4732:     # ----------------------------------------------------------------------
+4733:     # Accessor Methods
+4734:     # ----------------------------------------------------------------------
+4735:     str = CachedAccessor("str", StringMethods)
+4736:     dt = CachedAccessor("dt", CombinedDatetimelikeProperties)
+4737:     cat = CachedAccessor("cat", CategoricalAccessor)

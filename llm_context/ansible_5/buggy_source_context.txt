@@ -1,0 +1,48 @@
+### FILE: lib/ansible/module_utils/common/validation.py
+169: def check_required_arguments(argument_spec, module_parameters):
+170:     """Check all paramaters in argument_spec and return a list of parameters
+171:     that are required but not present in module_parameters
+172: 
+173:     Raises TypeError if the check fails
+174: 
+175:     :arg argument_spec: Argument spec dicitionary containing all parameters
+176:         and their specification
+177:     :arg module_paramaters: Dictionary of module parameters
+178: 
+179:     :returns: Empty list or raises TypeError if the check fails.
+180:     """
+181: 
+182:     missing = []
+183:     if argument_spec is None:
+184:         return missing
+185: 
+186:     for (k, v) in argument_spec.items():
+187:         required = v.get('required', False)
+188:         if required and k not in module_parameters:
+189:             missing.append(k)
+190: 
+191:     if missing:
+192:         msg = "missing required arguments: %s" % ", ".join(missing)
+193:         raise TypeError(to_native(msg))
+194: 
+195:     return missing
+196: 
+197: 
+198: def check_required_if(requirements, module_parameters):
+199:     """Check parameters that are conditionally required
+200: 
+201:     Raises TypeError if the check fails
+202: 
+203:     :arg requirements: List of lists specifying a parameter, value, parameters
+204:         required when the given parameter is the specified value, and optionally
+205:         a boolean indicating any or all parameters are required.
+206: 
+207:         Example:
+208:             required_if=[
+209:                 ['state', 'present', ('path',), True],
+210:                 ['someint', 99, ('bool_param', 'string_param')],
+211:             ]
+212: 
+213:     :arg module_paramaters: Dictionary of module parameters
+214: 
+215:     :returns: Empty list or raises TypeError if the check fails.

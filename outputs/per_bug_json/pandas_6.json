@@ -1,0 +1,125 @@
+{
+  "project": "pandas",
+  "bug_id": "6",
+  "slug": "pandas_6",
+  "bug_info": {
+    "python_version": "\"3.8.3\"",
+    "buggy_commit_id": "\"21a10d1\"",
+    "fixed_commit_id": "\"8cd8ed3657e52ad9f67e17b7f5c20f7340ab6a2c\"",
+    "test_file": "\"pandas/tests/groupby/test_size.py\""
+  },
+  "patch_path": "C:\\COSC540\\github_mining_starter\\data\\patches\\pandas_6.patch",
+  "files_changed": 1,
+  "source_files_changed": 1,
+  "test_files_changed": 0,
+  "human_test_added": false,
+  "human_test_modified": false,
+  "source_files": [
+    {
+      "old_path": "pandas/core/groupby/grouper.py",
+      "new_path": "pandas/core/groupby/grouper.py",
+      "display_path": "pandas/core/groupby/grouper.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 3,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -754,7 +754,9 @@ def get_grouper(",
+          "lines": [
+            "             return False",
+            "         try:",
+            "             return gpr is obj[gpr.name]",
+            "-        except (KeyError, IndexError):",
+            "+        except (KeyError, IndexError, ValueError):",
+            "+            # TODO: ValueError: Given date string not likely a datetime.",
+            "+            # should be KeyError?",
+            "             return False",
+            " ",
+            "     for i, (gpr, level) in enumerate(zip(keys, levels)):"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "test_files": [],
+  "all_files": [
+    {
+      "old_path": "pandas/core/groupby/grouper.py",
+      "new_path": "pandas/core/groupby/grouper.py",
+      "display_path": "pandas/core/groupby/grouper.py",
+      "change_type": "modified",
+      "is_test_file": false,
+      "added_lines": 3,
+      "deleted_lines": 1,
+      "added_assertions": [],
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "hunks": [
+        {
+          "header": "@@ -754,7 +754,9 @@ def get_grouper(",
+          "lines": [
+            "             return False",
+            "         try:",
+            "             return gpr is obj[gpr.name]",
+            "-        except (KeyError, IndexError):",
+            "+        except (KeyError, IndexError, ValueError):",
+            "+            # TODO: ValueError: Given date string not likely a datetime.",
+            "+            # should be KeyError?",
+            "             return False",
+            " ",
+            "     for i, (gpr, level) in enumerate(zip(keys, levels)):"
+          ]
+        }
+      ],
+      "hunk_count": 1
+    }
+  ],
+  "reproducible": null,
+  "notes": "human_test_baseline_quality=partial",
+  "human_tests": [
+    {
+      "source": "failing_test_reference",
+      "file": "pandas/tests/groupby/test_size.py",
+      "change_type": "existing",
+      "added_test_defs": [],
+      "deleted_test_defs": [],
+      "added_assertions": [],
+      "requested_tests": [
+        "test_size"
+      ],
+      "matched_test_names": [
+        "test_size"
+      ],
+      "matched_qualnames": [
+        "test_size"
+      ],
+      "extracted_functions": [
+        {
+          "name": "test_size",
+          "qualname": "test_size",
+          "class_name": null,
+          "start_line": 9,
+          "end_line": 13,
+          "body": "def test_size(df, by):\n    grouped = df.groupby(by=by)\n    result = grouped.size()\n    for key, group in grouped:\n        assert result[key] == len(group)"
+        }
+      ],
+      "file_preview": "import numpy as np\nimport pytest\n\nfrom pandas import DataFrame, Index, PeriodIndex, Series\nimport pandas._testing as tm\n\n\n@pytest.mark.parametrize(\"by\", [\"A\", \"B\", [\"A\", \"B\"]])\ndef test_size(df, by):\n    grouped = df.groupby(by=by)\n    result = grouped.size()\n    for key, group in grouped:\n        assert result[key] == len(group)\n\n\n@pytest.mark.parametrize(\"by\", [\"A\", \"B\", [\"A\", \"B\"]])\n@pytest.mark.parametrize(\"sort\", [True, False])\ndef test_size_sort(df, sort, by):\n    df = DataFrame(np.random.choice(20, (1000, 3)), columns=list(\"ABC\"))\n    left = df.groupby(by=by, sort=sort).size()\n    right = df.groupby(by=by, sort=sort)[\"C\"].apply(lambda a: a.shape[0])\n    tm.assert_series_equal(left, right, check_names=False)\n\n\ndef test_size_series_dataframe():\n    # https://github.com/pandas-dev/pandas/issues/11699\n    df = DataFrame(columns=[\"A\", \"B\"])\n    out = Series(dtype=\"int64\", index=Index([], name=\"A\"))\n    tm.assert_series_equal(df.groupby(\"A\").size(), out)\n\n\ndef test_size_groupby_all_null():\n    # https://github.com/pandas-dev/pandas/issues/23050\n    # Assert no 'Value Error : Length of passed values is 2, index implies 0'\n    df = DataFrame({\"A\": [None, None]})  # all-null groups\n    result = df.groupby(\"A\").size()\n    expected = Series(dtype=\"int64\", index=Index([], name=\"A\"))\n    tm.assert_series_equal(result, expected)\n\n\ndef test_size_period_index():\n    # https://github.com/pandas-dev/pandas/issues/34010\n    ser = Series([1], index=PeriodIndex([\"2000\"], name=\"A\", freq=\"D\"))\n    grp = ser.groupby(level=\"A\")\n    result = grp.size()\n    tm.assert_series_equal(result, ser)",
+      "raw_failing_test_reference": "\"pandas/tests/groupby/test_size.py\""
+    }
+  ],
+  "human_test_names": [
+    "test_size"
+  ],
+  "human_test_files": [
+    "pandas/tests/groupby/test_size.py"
+  ],
+  "human_test_count": 1,
+  "human_test_baseline_quality": "partial",
+  "has_failing_test_reference": true,
+  "has_changed_test_baseline": false
+}
