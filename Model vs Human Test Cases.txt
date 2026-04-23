@@ -207,3 +207,637 @@ class TestUtils(unittest.TestCase):
         self.assertIsNone(parse_dfxp_time_expr('10m')) # Wrong unit
         self.assertIsNone(parse_dfxp_time_expr('10.s')) # Missing digits after dot
         self.assertIsNone(parse_dfxp_time_expr('10..5s')) # Malformed float
+
+A function from Ansible 2:
+
+```python
+class _Numeric:
+    """Class to easily allow comparing numbers"""
+
+    def __init__(self, specifier):
+        self.specifier = int(specifier)
+
+    def __repr__(self):
+        return repr(self.specifier)
+
+    def __eq__(self, other):
+        if isinstance(other, _Numeric):
+            return self.specifier == other.specifier
+        elif isinstance(other, int):
+            return self.specifier == other
+
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __lt__(self, other):
+        if isinstance(other, _Numeric):
+            return self.specifier < other.specifier
+        elif isinstance(other, int):
+            return self.specifier < other
+        elif isinstance(other, _Alpha):
+            return True
+
+        raise ValueError
+```
+
+Test Case from Human:
+
+def test_numeric_comparisons():
+    a = _Numeric("5")
+    b = _Numeric("10")
+
+    # Case 1: equality with another _Numeric
+    assert a == _Numeric("5")
+
+    # Case 2: equality with int
+    assert a == 5
+
+    # Case 3: inequality
+    assert a != b
+
+    # Case 4: less than comparison
+    assert a < b
+
+    # Case 5: less than with int
+    assert a < 10
+
+
+Test Case from the Model:
+
+class TestNumericComparisonOperators:
+    """
+    Regression tests for comparison operators in _Numeric.
+    """
+
+    def test_numeric_greater_than_itself_is_false(self):
+        """
+        Ensures that a _Numeric instance is not considered greater than itself.
+        This directly targets the bug in _Numeric.__gt__ where it was incorrectly
+        implemented as 'not self.__lt__(other)', causing '5 > 5' to return True.
+        """
+        num = _Numeric(5)
+        # In the buggy version:
+        # num.__lt__(num) -> False (since 5 < 5 is False)
+        # num.__gt__(num) -> not False -> True
+        # So, 'num > num' evaluates to True.
+        # The assertion 'assert not (num > num)' will then fail because 'not True' is False.
+        # In the fixed version, num.__gt__(num) returns False, so 'not False' is True, and the test passes.
+        assert not (num > num)
+
+    def test_numeric_greater_than_or_equal_to_itself_is_true(self):
+        """
+        Ensures that a _Numeric instance is considered greater than or equal to itself.
+        This tests the __ge__ operator. While __ge__ was indirectly affected by the
+        bug in __gt__, for self-comparison, it happened to yield the correct result
+        in the buggy version due to __eq__ being correct.
+        This test is included for completeness but is not the primary failure point.
+        """
+        num = _Numeric(5)
+        assert num >= num
+
+    def test_numeric_greater_than_smaller_numeric(self):
+        """
+        Ensures a _Numeric instance is greater than a smaller _Numeric instance.
+        """
+        num_five = _Numeric(5)
+        num_three = _Numeric(3)
+        assert num_five > num_three
+        assert not (num_three > num_five) # Also verifies __gt__ logic
+
+    def test_numeric_greater_than_alpha(self):
+        """
+        Ensures a _Numeric instance is not greater than an _Alpha instance,
+        as per the established cross-type comparison logic where _Numeric < _Alpha.
+        """
+        num = _Numeric(5)
+        alpha = _Alpha('a')
+        # _Numeric.__lt__ against _Alpha returns True, so num < alpha is True.
+        # Thus, num > alpha should be False.
+        assert not (num > alpha)
+```
+
+A Function from ansible_3:
+
+def parse_distribution_file_Debian(self, name, data, path, collected_facts):
+    debian_facts = {}
+
+    if 'Debian' in data or 'Raspbian' in data:
+        debian_facts['distribution'] = 'Debian'
+
+    elif 'Ubuntu' in data:
+        debian_facts['distribution'] = 'Ubuntu'
+
+    elif 'SteamOS' in data:
+        debian_facts['distribution'] = 'SteamOS'
+
+    return debian_facts
+
+Test Case from human:
+
+def test_parse_distribution_file_debian_ubuntu():
+    # Create dummy object (since method uses self)
+    class Dummy:
+        module = None
+
+    obj = Dummy()
+
+    data = "Ubuntu 20.04 LTS"
+    result = obj.parse_distribution_file_Debian(
+        name="test",
+        data=data,
+        path="",
+        collected_facts={'distribution_release': 'NA'}
+    )
+
+    assert result['distribution'] == 'Ubuntu'
+
+Test Case from the Model:
+
+# A minimal mock for InfoExtractor to test _extract_dash_formats
+class MockInfoExtractor(InfoExtractor):
+    def __init__(self):
+        # InfoExtractor's __init__ expects a 'downloader' object (usually an instance of YoutubeDL).
+        # For this test, a minimal mock is sufficient to satisfy the constructor.
+        class MockDownloader:
+            params = {}  # _extract_dash_formats might access self.ydl.params indirectly
+        self.ydl = MockDownloader()
+        super(MockInfoExtractor, self).__init__(self.ydl)
+        self.warnings = []
+
+    def report_warning(self, message):
+        self.warnings.append(message)
+
+
+class TestInfoExtractor(unittest.TestCase):
+    def test_dash_formats_duplicate_representation_id_regression(self):
+        """
+        Tests that _extract_dash_formats correctly handles MPD manifests
+        containing multiple <Representation> elements with the same 'id'.
+        The bug caused only the last representation with a given ID to be kept,
+        overwriting properties of earlier ones. This test asserts that all
+        representations, even with duplicate IDs, are processed as distinct formats.
+        """
+        ie = MockInfoExtractor()
+        mpd_url = 'http://example.com/test.mpd'
+        video_id = 'test_video'
+
+        # Craft a minimal MPD XML with two representations that have the
+        # same 'id' but distinct 'bandwidth' and 'BaseURL' to highlight
+        # the overwriting bug.
+        mpd_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns="urn:mpeg:dash:schema:mpd:2011"
+     xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
+     minBufferTime="PT1.5S" type="static" mediaPresentationDuration="PT0H0M30.0S">
+  <Period>
+    <AdaptationSet id="0" mimeType="video/mp4" codecs="avc1.4d401e">
+      <Representation id="common_video_id" bandwidth="1000">
+        <BaseURL>http://example.com/video1/</BaseURL>
+        <SegmentList duration="2">
+          <SegmentURL media="segment_1_1.mp4"/>
+        </SegmentList>
+      </Representation>
+      <Representation id="common_video_id" bandwidth="2000">
+        <BaseURL>http://example.com/video2/</BaseURL>
+        <SegmentList duration="2">
+          <SegmentURL media="segment_2_1.mp4"/>
+        </SegmentList>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>
+"""
+        mpd_obj = ET.fromstring(mpd_xml)
+
+        # Call the target method containing the bug.
+        formats = ie._extract_dash_formats(mpd_obj, mpd_url, video_id)
+
+        # In the buggy version (before the fix), the `next()` call would find the first
+        # representation with 'common_video_id', and then `existing_format.update(f)`
+        # would overwrite its properties with those of the second representation.
+        # This would result in only ONE format entry in the 'formats' list.
+        # The fixed version ensures that both representations are added as distinct formats.
+        self.assertEqual(len(formats), 2,
+                         'Expected two distinct formats for representations with the same ID, '
+                         'but found %d. This indicates the bug where formats with duplicate IDs are overwritten.' % len(formats))
+
+        # Verify that the properties of the first representation are correctly preserved.
+        # In the buggy version, formats[0]['bandwidth'] would be 2000.
+        self.assertEqual(formats[0]['format_id'], 'common_video_id')
+        self.assertEqual(formats[0]['bandwidth'], 1000,
+                         'First format bandwidth should retain its original value (1000) and not be overwritten by the second representation.')
+        self.assertIn('http://example.com/video1/segment_1_1.mp4', [f.values()[0] for f in formats[0]['fragments']],
+                      'First format should contain fragments from its original BaseURL.')
+
+        # Verify that the properties of the second representation are correctly added as a new format.
+        self.assertEqual(formats[1]['format_id'], 'common_video_id')
+        self.assertEqual(formats[1]['bandwidth'], 2000,
+                         'Second format should be added with its unique bandwidth (2000).')
+        self.assertIn('http://example.com/video2/segment_2_1.mp4', [f.values()[0] for f in formats[1]['fragments']],
+                      'Second format should contain fragments from its distinct BaseURL.')
+```
+
+A Function from Ansible 4:
+
+def _ensure_default_collection(collection_list=None):
+    default_collection = AnsibleCollectionLoader().default_collection
+
+    if collection_list is None:
+        collection_list = []
+
+    if default_collection:  # FIXME: exclude role tasks?
+        if isinstance(collection_list, string_types):
+            collection_list = [collection_list]
+
+        if default_collection not in collection_list:
+            collection_list.insert(0, default_collection)
+
+    # if there's something in the list, ensure that builtin or legacy is always there too
+    if collection_list and 'ansible.builtin' not in collection_list and 'ansible.legacy' not in collection_list:
+        collection_list.append('ansible.legacy')
+
+    return collection_list
+
+
+Test Case from Human:
+
+def test_ensure_default_collection_basic(mocker):
+    # Mock default collection
+    mocker.patch(
+        'ansible.utils.collection_loader.AnsibleCollectionLoader.default_collection',
+        new='my.collection'
+    )
+
+    # Case 1: None input → should initialize list and add default + legacy
+    result = _ensure_default_collection(None)
+    assert result[0] == 'my.collection'
+    assert 'ansible.legacy' in result
+
+    # Case 2: existing list → default added at front
+    result = _ensure_default_collection(['custom.collection'])
+    assert result[0] == 'my.collection'
+    assert 'custom.collection' in result
+
+    # Case 3: default already present → no duplication
+    result = _ensure_default_collection(['my.collection'])
+    assert result.count('my.collection') == 1
+
+Test Case from the Model:
+
+# Assume string_types is defined in the same scope as the function, e.g., as part of a compatibility layer
+string_types = str  # For Python 3, this is typically `str`
+
+# Define a minimal placeholder for AnsibleCollectionLoader so the function can be parsed and patched
+class AnsibleCollectionLoader:
+    def __init__(self):
+        self.default_collection = None
+
+# The function under test (copied for self-containment, in a real scenario it would be imported)
+def _ensure_default_collection(collection_list=None):
+    default_collection = AnsibleCollectionLoader().default_collection
+
+    if collection_list is None:
+        collection_list = []
+
+    if default_collection:  # FIXME: exclude role tasks?
+        if isinstance(collection_list, string_types):
+            collection_list = [collection_list]
+
+        if default_collection not in collection_list:
+            collection_list.insert(0, default_collection)
+
+    # if there's something in the list, ensure that builtin or legacy is always there too
+    if collection_list and 'ansible.builtin' not in collection_list and 'ansible.legacy' not in collection_list:
+        collection_list.append('ansible.legacy')
+
+    return collection_list
+
+
+def test_ensure_default_collection_none_input_adds_default_and_legacy():
+    """
+    Tests that when `collection_list` is None, `default_collection` exists,
+    and neither `ansible.builtin` nor `ansible.legacy` are present,
+    the function correctly inserts the default collection and appends 'ansible.legacy'.
+    """
+    # Patch AnsibleCollectionLoader to control the value of default_collection.
+    # We assume AnsibleCollectionLoader is in the global scope (__main__) for this self-contained test.
+    with patch('__main__.AnsibleCollectionLoader') as MockLoader:
+        # Configure the mock instance that AnsibleCollectionLoader() will return
+        mock_loader_instance = MagicMock()
+        mock_loader_instance.default_collection = "my.test_default_collection"
+        MockLoader.return_value = mock_loader_instance
+
+        # Call the function with initial_list = None
+        initial_list = None
+        actual_list = _ensure_default_collection(initial_list)
+
+        # Assert the expected outcome: default collection inserted first, legacy appended
+        expected_list = ["my.test_default_collection", "ansible.legacy"]
+        assert actual_list == expected_list
+
+
+A Function from Ansible 5:
+
+def check_required_arguments(argument_spec, module_parameters):
+    """Check all paramaters in argument_spec and return a list of parameters
+    that are required but not present in module_parameters
+    """
+    missing = []
+    if argument_spec is None:
+        return missing
+
+    for (k, v) in argument_spec.items():
+        required = v.get('required', False)
+        if required and k not in module_parameters:
+            missing.append(k)
+
+    if missing:
+        msg = "missing required arguments: %s" % ", ".join(missing)
+        raise TypeError(msg)
+
+    return missing
+
+
+Test Case from Human:
+
+def test_check_required_arguments_missing_param():
+    argument_spec = {
+        "name": {"required": True},
+        "age": {"required": False}
+    }
+
+    module_parameters = {
+        "age": 25
+    }
+
+    try:
+        check_required_arguments(argument_spec, module_parameters)
+        assert False  # should not reach here
+    except TypeError:
+        assert True
+
+Test Case from the Model:
+
+# Assuming the function check_required_arguments is available in the same scope or imported
+
+def test_check_required_arguments_raises_type_error_for_multiple_missing():
+    """
+    Test that check_required_arguments raises TypeError when multiple required arguments
+    are missing, and the error message correctly lists the missing parameters.
+    """
+    argument_spec = {
+        'required_param_a': {'required': True, 'type': 'str'},
+        'optional_param_b': {'required': False, 'type': 'int', 'default': 10},
+        'required_param_c': {'required': True, 'type': 'bool'},
+        'required_param_d': {'required': True},
+    }
+    module_parameters = {
+        'required_param_a': 'value_for_a', # Present
+        'optional_param_b': 20,           # Present, optional
+    }
+
+    # 'required_param_c' and 'required_param_d' are missing.
+    with pytest.raises(TypeError) as excinfo:
+        check_required_arguments(argument_spec, module_parameters)
+
+    error_message = str(excinfo.value)
+
+    assert "missing required arguments" in error_message
+    assert "required_param_c" in error_message
+    assert "required_param_d" in error_message
+    # Ensure parameters that are present or optional are not mentioned as missing
+    assert "required_param_a" not in error_message
+    assert "optional_param_b" not in error_message
+
+    # Verify that the message structure generally matches,
+    # allowing for potential variations in the order of missing arguments
+    # due to dictionary iteration differences across Python versions if applicable.
+    # The key is that all *expected* missing params are present, and no others.
+
+
+A Function from Pandas 2:
+
+def _convert_key(self, key, is_setter: bool = False):
+    if is_setter:
+        return list(key)
+    return key
+
+
+Test Case from Human:
+
+def test_convert_key_setter_returns_list():
+    class Dummy:
+        pass
+
+    indexer = Dummy()
+
+    key = (1, 2)
+    result = _AtIndexer._convert_key(indexer, key, is_setter=True)
+
+    assert result == [1, 2]
+
+
+Test Case from the Model:
+
+# The function under test, as provided.
+# In a real project, this would be imported from its module.
+def _convert_key(self, key, is_setter: bool = False):
+    if is_setter:
+        return list(key)
+    return key
+
+@pytest.mark.parametrize(
+    "key_input, is_setter, expected_output",
+    [
+        ("test_string", False, "test_string"),  # is_setter=False: key returned as-is
+        ("string_key", True, ['s', 't', 'r', 'i', 'n', 'g', '_', 'k', 'e', 'y']),  # is_setter=True: string converted to list of chars
+        ((1, 2, 3), True, [1, 2, 3]),  # is_setter=True: tuple converted to list
+        ([4, 5, 6], True, [4, 5, 6]),  # is_setter=True: list converted to a *new* list
+    ]
+)
+def test_convert_key_behavior(key_input, is_setter, expected_output):
+    """
+    Tests _convert_key to ensure it correctly transforms keys based on the is_setter flag.
+    """
+    # Pass None for 'self' as the method's logic does not use it.
+    actual_output = _convert_key(None, key_input, is_setter)
+    
+    assert actual_output == expected_output
+    
+    # Additional assertion to ensure a new list object is created when converting an existing list
+    if is_setter and isinstance(key_input, list):
+        assert actual_output is not key_input
+```
+
+A Function from Pandas 3:
+
+def to_period(self, freq=None, copy=True) -> "Series":
+    new_values = self._values
+    if copy:
+        new_values = new_values.copy()
+
+    assert isinstance(self.index, DatetimeIndex)
+    new_index = self.index.to_period(freq=freq)
+    return self._constructor(new_values, index=new_index).__finalize__(
+        self, method="to_period"
+    )
+
+
+Test Case from Human:
+
+import pandas as pd
+
+def test_to_period_basic():
+    s = pd.Series([1, 2, 3], index=pd.date_range("2020-01-01", periods=3))
+
+    result = s.to_period(freq="D")
+
+    assert str(result.index.dtype) == "period[D]"
+
+
+
+Test Case from the Model:
+
+def test_to_period_converts_datetimeindex_to_periodindex():
+    # Setup a Series with DatetimeIndex
+    dti = pd.to_datetime(['2023-01-01 09:00:00', '2023-01-01 15:30:00', '2023-01-02 11:00:00'])
+    s = pd.Series([10, 20, 30], index=dti)
+
+    # Define the target frequency
+    target_freq = 'D'
+
+    # Call the function (it's a method of Series)
+    result_series = s.to_period(freq=target_freq)
+
+    # Expected PeriodIndex
+    expected_pi = pd.PeriodIndex(['2023-01-01', '2023-01-01', '2023-01-02'], freq=target_freq)
+    expected_series = pd.Series([10, 20, 30], index=expected_pi)
+
+    # Assertions
+    assert isinstance(result_series, pd.Series)
+    assert isinstance(result_series.index, pd.PeriodIndex)
+    assert result_series.index.freq == target_freq
+    pd.testing.assert_series_equal(result_series, expected_series)
+
+
+A Function from Pandas 4:
+
+def flip_join_inputs(self_is_mi, how):
+    flip_order = False
+    if self_is_mi:
+        flip_order = True
+        how = {"right": "left", "left": "right"}.get(how, how)
+    return flip_order, how
+
+
+Test Case from Human:
+
+def test_flip_join_inputs_left_to_right():
+    flip, how = flip_join_inputs(True, "left")
+
+    assert flip is True
+    assert how == "right"
+
+Test Case from the Model:
+
+def flip_join_inputs(self_is_mi, how):
+    flip_order = False
+    if self_is_mi:
+        flip_order = True
+        how = {"right": "left", "left": "right"}.get(how, how)
+    return flip_order, how
+
+@pytest.mark.parametrize(
+    "self_is_mi, how_in, expected_flip_order, expected_how",
+    [
+        # self_is_mi is False: no flip, how unchanged
+        (False, "left", False, "left"),
+        (False, "right", False, "right"),
+        (False, "inner", False, "inner"),
+        (False, "outer", False, "outer"),
+        # self_is_mi is True: flip_order is True, how flips if "left" or "right"
+        (True, "left", True, "right"),
+        (True, "right", True, "left"),
+        (True, "inner", True, "inner"),  # "inner" is not in the map, so it remains "inner"
+        (True, "outer", True, "outer"),  # "outer" is not in the map, so it remains "outer"
+        (True, "on", True, "on"), # another arbitrary string
+    ],
+)
+def test_flip_join_inputs(self_is_mi, how_in, expected_flip_order, expected_how):
+    flip_order, how_out = flip_join_inputs(self_is_mi, how_in)
+    assert flip_order == expected_flip_order
+    assert how_out == expected_how
+
+A Function from Pandas 6:
+
+def is_in_obj(gpr, obj):
+    if not hasattr(gpr, "name"):
+        return False
+    try:
+        return gpr is obj[gpr.name]
+    except (KeyError, IndexError):
+        return False
+
+Test Case from Human:
+
+def test_is_in_obj_basic_and_missing_cases():
+    class Dummy:
+        def __init__(self, name):
+            self.name = name
+
+    obj = {"a": None}
+    gpr = Dummy("a")
+    obj["a"] = gpr  # ensure identity match
+
+    # Case 1: object matches
+    assert is_in_obj(gpr, obj) is True
+
+    # Case 2: object with no name attribute
+    assert is_in_obj(123, obj) is False
+
+    # Case 3: name not in obj → KeyError handled
+    gpr2 = Dummy("b")
+    assert is_in_obj(gpr2, obj) is False
+
+
+Test Case from the Model:
+
+def test_is_in_obj_identity_and_edge_cases():
+    class MockGPR:
+        def __init__(self, name_attr=None):
+            if name_attr is not None:
+                self.name = name_attr
+
+    # Case 1: gpr is exactly obj[gpr.name] -> Should return True
+    gpr_target = MockGPR("item_name")
+    container = {"item_name": gpr_target, "other_item": MockGPR("other_name")}
+    assert is_in_obj(gpr_target, container) is True
+
+    # Case 2: gpr is NOT obj[gpr.name], even if they have the same 'name' and value -> Should return False
+    gpr_different_instance = MockGPR("item_name")
+    assert is_in_obj(gpr_different_instance, container) is False
+
+    # Case 3: gpr has no 'name' attribute -> Should return False
+    gpr_no_name = MockGPR()
+    assert is_in_obj(gpr_no_name, container) is False
+
+    # Case 4: gpr.name is not found in obj (KeyError/IndexError) -> Should return False
+    gpr_missing_key = MockGPR("non_existent_key")
+    assert is_in_obj(gpr_missing_key, container) is False
+
+    # Case 5: obj is a list and gpr.name is a valid index, and gpr is the object at that index -> Should return True
+    gpr_list_item = MockGPR(0)
+    list_container = [gpr_list_item, MockGPR(1)]
+    assert is_in_obj(gpr_list_item, list_container) is True
+
+    # Case 6: gpr.name is an invalid index for a list (IndexError) -> Should return False
+    gpr_invalid_index = MockGPR(999)
+    assert is_in_obj(gpr_invalid_index, list_container) is False
+
+    # Case 7: obj is not subscriptable (e.g., None, int) -> Should return False
+    assert is_in_obj(gpr_target, None) is False
+    assert is_in_obj(gpr_target, 123) is False
+
+
