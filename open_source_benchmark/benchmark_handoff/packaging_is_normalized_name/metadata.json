@@ -1,0 +1,9 @@
+{
+  "slug": "packaging_is_normalized_name",
+  "repo": "packaging",
+  "function": "is_normalized_name",
+  "difficulty": "easy",
+  "focus": "Detect whether a package name is already normalized.",
+  "source_file": "C:\\open_source_eval\\packaging\\src\\packaging\\utils.py",
+  "human_test_file": "C:\\open_source_eval\\packaging\\tests\\test_utils.py"
+}

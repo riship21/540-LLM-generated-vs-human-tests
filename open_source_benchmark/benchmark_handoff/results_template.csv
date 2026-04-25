@@ -1,0 +1,7 @@
+slug,repo,function,difficulty,llm_model,prompt_type,generated_test_file,compiles,runs,passes_project_tests,human_baseline_used,notes
+slugify_basic,python-slugify,slugify,easy,,,,,,,yes,
+slugify_unicode,python-slugify,slugify,easy_medium,,,,,,,yes,
+slugify_advanced,python-slugify,slugify,medium,,,,,,,yes,
+packaging_canonicalize_name,packaging,canonicalize_name,easy,,,,,,,yes,
+packaging_is_normalized_name,packaging,is_normalized_name,easy,,,,,,,yes,
+packaging_canonicalize_version,packaging,canonicalize_version,medium,,,,,,,yes,

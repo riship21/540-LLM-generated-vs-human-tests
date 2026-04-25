@@ -1,0 +1,9 @@
+{
+  "slug": "slugify_unicode",
+  "repo": "python-slugify",
+  "function": "slugify",
+  "difficulty": "easy_medium",
+  "focus": "Unicode handling and allow_unicode behavior.",
+  "source_file": "C:\\open_source_eval\\python-slugify\\slugify\\slugify.py",
+  "human_test_file": "C:\\open_source_eval\\python-slugify\\test.py"
+}

@@ -1,0 +1,9 @@
+{
+  "slug": "slugify_advanced",
+  "repo": "python-slugify",
+  "function": "slugify",
+  "difficulty": "medium",
+  "focus": "max_length, word_boundary, stopwords, replacements, separator.",
+  "source_file": "C:\\open_source_eval\\python-slugify\\slugify\\slugify.py",
+  "human_test_file": "C:\\open_source_eval\\python-slugify\\test.py"
+}

@@ -1,0 +1,20 @@
+You are given a Python function from an open-source project.
+
+Task:
+Write pytest unit tests for the target function only.
+
+Rules:
+- Generate only test code.
+- Do not modify production code.
+- Keep tests focused and minimal.
+- Cover normal behavior and important edge cases.
+- Follow pytest style.
+- Do not look at the human baseline tests.
+
+Repository: packaging
+Function: canonicalize_name
+Difficulty: easy
+Focus: Normalize Python package names consistently.
+
+Deliverable:
+Return only the test file content.

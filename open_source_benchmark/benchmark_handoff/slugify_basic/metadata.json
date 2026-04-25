@@ -1,0 +1,9 @@
+{
+  "slug": "slugify_basic",
+  "repo": "python-slugify",
+  "function": "slugify",
+  "difficulty": "easy",
+  "focus": "Basic slug generation from plain ASCII text.",
+  "source_file": "C:\\open_source_eval\\python-slugify\\slugify\\slugify.py",
+  "human_test_file": "C:\\open_source_eval\\python-slugify\\test.py"
+}

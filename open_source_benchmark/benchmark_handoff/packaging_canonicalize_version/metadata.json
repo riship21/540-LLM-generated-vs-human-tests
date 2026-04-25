@@ -1,0 +1,9 @@
+{
+  "slug": "packaging_canonicalize_version",
+  "repo": "packaging",
+  "function": "canonicalize_version",
+  "difficulty": "medium",
+  "focus": "Normalize version strings, including trailing zero behavior.",
+  "source_file": "C:\\open_source_eval\\packaging\\src\\packaging\\utils.py",
+  "human_test_file": "C:\\open_source_eval\\packaging\\tests\\test_utils.py"
+}
