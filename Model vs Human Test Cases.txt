@@ -788,4 +788,807 @@ def test_is_in_obj_identity_and_edge_cases():
     assert is_in_obj(gpr_target, None) is False
     assert is_in_obj(gpr_target, 123) is False
 
+A Function from Pandas 7:
+
+def _filter_indexer_tolerance(values, target, indexer, tolerance):
+    distance = abs(values[indexer] - target)
+    return np.where(distance <= tolerance, indexer, -1)
+
+Test Case from Human:
+
+
+
+def test_filter_indexer_tolerance_basic():
+    values = np.array([10, 20, 30])
+    indexer = np.array([0, 1, 2])
+    target = np.array([12, 18, 50])
+    tolerance = 5
+
+    result = _filter_indexer_tolerance(values, target, indexer, tolerance)
+
+    assert (result == np.array([0, 1, -1])).all()
+
+
+Test Case from the Model:
+
+def test_filter_indexer_tolerance_basic():
+    """
+    Test _filter_indexer_tolerance with a mix of in-tolerance and out-of-tolerance values.
+    """
+    values = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+    target = 3.5
+    indexer = np.array([0, 1, 2, 3, 4, 5])
+    tolerance = 0.6
+    # Expected:
+    # values[indexer] = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    # distance = abs(values[indexer] - target) = abs([ -2.5, -1.5, -0.5, 0.5, 1.5, 2.5]) = [2.5, 1.5, 0.5, 0.5, 1.5, 2.5]
+    # distance <= tolerance (0.6) = [False, False, True, True, False, False]
+    # np.where(condition, indexer, -1) should yield [-1, -1, 2, 3, -1, -1]
+    expected = np.array([-1, -1, 2, 3, -1, -1])
+    result = _filter_indexer_tolerance(values, target, indexer, tolerance)
+    np.testing.assert_array_equal(result, expected)
+
+A Function from Pandas 8:
+
+if not mask.any():
+    if inplace:
+        return [self]
+    return [self.copy()]
+
+Test Case from Human:
+
+class Dummy:
+    def __init__(self, value):
+        self.value = value
+
+    def copy(self):
+        return Dummy(self.value)
+
+def test_handle_no_match_returns_correct_object():
+    obj = Dummy(5)
+    mask = np.array([False, False, False])
+
+    # Case 1: inplace=True → should return the same object
+    result = handle_no_match(mask, obj, inplace=True)
+    assert result[0] is obj
+
+    # Case 2: inplace=False → should return a new copy
+    result = handle_no_match(mask, obj, inplace=False)
+    assert result[0] is not obj
+    assert result[0].value == obj.value
+
+Test Case from the Model:
+
+# The provided code snippet, adapted into a testable function.
+# It takes `mask`, `inplace`, and `self` as explicit arguments
+# to simulate their availability in the original context.
+def _evaluate_snippet_logic(mask, inplace, self_obj):
+    if not mask.any():
+        if inplace:
+            return [self_obj]
+        return [self_obj.copy()]
+    # The snippet does not define behavior if `mask.any()` is True,
+    # so our tests will focus exclusively on the `not mask.any()` path.
+
+
+def test_function_returns_correct_list_based_on_flags():
+    """
+    Tests the snippet's behavior across its two explicit return paths:
+    1. If `inplace` is True, it should return a list containing the original `self_obj`.
+    2. If `inplace` is False, it should return a list containing the result of `self_obj.copy()`.
+
+    In both tested scenarios, `mask.any()` is configured to return `False`
+    to ensure the snippet's conditional branches are entered.
+    """
+    # --- Setup common mock objects for the test ---
+    # Mock `mask` object: Configure `mask.any()` to always return False
+    # This ensures we enter the `if not mask.any():` block.
+    mock_mask = Mock()
+    mock_mask.any.return_value = False
+
+    # Mock `self_obj`: This represents the `self` instance.
+    original_self_obj = Mock()
+    # Define a distinct mock object to be returned by `self_obj.copy()`.
+    # This helps verify that `copy()` was called and returned a specific object.
+    mock_copied_obj = Mock()
+    original_self_obj.copy.return_value = mock_copied_obj
+
+    # --- Test Case 1: `inplace` is True ---
+    # Expected behavior: Return `[original_self_obj]`, `self_obj.copy()` should NOT be called.
+    result_when_inplace = _evaluate_snippet_logic(mock_mask, True, original_self_obj)
+
+    assert result_when_inplace == [original_self_obj]
+    original_self_obj.copy.assert_not_called()  # Verify `copy()` was not invoked
+
+    # --- Test Case 2: `inplace` is False ---
+    # Expected behavior: Return `[mock_copied_obj]`, `self_obj.copy()` should be called exactly once.
+    # Reset mock call history for `copy()` to ensure we're only counting calls for this specific test case.
+    original_self_obj.copy.reset_mock()
+
+    result_when_not_inplace = _evaluate_snippet_logic(mock_mask, False, original_self_obj)
+
+    assert result_when_not_inplace == [mock_copied_obj]
+    original_self_obj.copy.assert_called_once()  # Verify `copy()` was invoked exactly once
+    assert original_self_obj.copy.return_value is mock_copied_obj # Confirm `copy()` returned the expected mock
+
+A Function from Pandas 9:
+
+
+def contains_func(values, key):
+    # simulate NaN behavior
+    if isinstance(key, float) and np.isnan(key):
+        return any(np.isnan(v) for v in values)
+    return key in values
+
+
+Test Case from Human:
+
+def test_contains_func_basic_and_nan():
+    values = [1, 2, np.nan]
+
+    # Case 1: normal value exists
+    assert contains_func(values, 2) is True
+
+    # Case 2: normal value does not exist
+    assert contains_func(values, 5) is False
+
+    # Case 3: NaN check (special case)
+    assert contains_func(values, np.nan) is True
+
+
+Test Case from the Model:
+def _mock_contains_helper(obj_self, key, container):
+    """
+    Simulates `contains(self, key, container=self._codes)`.
+    For testing, we assume it checks if `key` is directly present in `container`.
+    """
+    return key in container
+
+# A minimal class to simulate the 'self' object for the __contains__ method.
+# It provides the `_codes` attribute and an `isna()` method that returns an object
+# with an `any()` method, mirroring pandas' behavior.
+class _MockSelf:
+    def __init__(self, codes, na_mask):
+        self._codes = codes  # e.g., [1, 2, 3] or ['A', 'B']
+        self._na_mask = na_mask # e.g., [False, False, True]
+
+    def isna(self):
+        # Mimics pandas.Series.isna().any() behavior
+        class IsnaResult:
+            def __init__(self, mask):
+                self._mask = mask
+            def any(self):
+                return any(self._mask)
+        return IsnaResult(self._na_mask)
+
+# The function under test, modified to use our mock helper and a _MockSelf instance.
+# In a real scenario, this would be a method, but for testing, we pass 'self' explicitly.
+def _function_under_test_contains_(self, key) -> bool:
+    if is_scalar(key) and isna(key):
+        return self.isna().any()
+    return _mock_contains_helper(self, key, container=self._codes)
+
+def test_contains_method_logic():
+    """
+    Tests the branching logic of the __contains__ method.
+    Covers scenarios where the key is NA, and where it's a regular value.
+    """
+    # 1. Test case: key is a NaN-like scalar (triggers the `if` branch)
+    # -----------------------------------------------------------------
+    # Case 1.1: self contains NA values
+    obj_with_na_data = _MockSelf(codes=[10, 20], na_mask=[False, True])
+    assert _function_under_test_contains_(obj_with_na_data, np.nan) is True
+    assert _function_under_test_contains_(obj_with_na_data, pd.NA) is True
+
+    # Case 1.2: self does NOT contain NA values
+    obj_without_na_data = _MockSelf(codes=[10, 20], na_mask=[False, False])
+    assert _function_under_test_contains_(obj_without_na_data, np.nan) is False
+    assert _function_under_test_contains_(obj_without_na_data, pd.NA) is False
+
+    # 2. Test case: key is a non-NaN scalar (triggers the `else` branch)
+    # ------------------------------------------------------------------
+    # Case 2.1: Key is present in `self._codes`
+    obj_searchable_codes = _MockSelf(codes=[100, 200, 300], na_mask=[False, False, False])
+    assert _function_under_test_contains_(obj_searchable_codes, 100) is True
+    assert _function_under_test_contains_(obj_searchable_codes, 300) is True
+
+    # Case 2.2: Key is NOT present in `self._codes`
+    assert _function_under_test_contains_(obj_searchable_codes, 400) is False
+    assert _function_under_test_contains_(obj_searchable_codes, 50) is False
+
+    # Case 2.3: `self` contains NA, but we search for a non-NA key
+    # (should still go to the `else` branch and check `_codes`)
+    obj_mixed_na_non_na = _MockSelf(codes=[1, 2, 3], na_mask=[False, True, False])
+    assert _function_under_test_contains_(obj_mixed_na_non_na, 1) is True
+    assert _function_under_test_contains_(obj_mixed_na_non_na, 4) is False
+
+    # 3. Edge case: Empty `self`
+    # --------------------------
+    obj_empty = _MockSelf(codes=[], na_mask=[])
+    assert _function_under_test_contains_(obj_empty, np.nan) is False # No NA, so False
+    assert _function_under_test_contains_(obj_empty, 1) is False      # No codes, so False
+
+    # 4. Edge case: Key is not a scalar (triggers the `else` branch directly as `is_scalar` is False)
+    # ------------------------------------------------------------------------------------------------
+    obj_non_scalar_search = _MockSelf(codes=[(1, 2), (3, 4)], na_mask=[False, False])
+    assert _function_under_test_contains_(obj_non_scalar_search, (1, 2)) is True
+    assert _function_under_test_contains_(obj_non_scalar_search, (5, 6)) is False
+
+
+A Function from youtube dl2:
+
+def update_or_append_format(formats, formats_dict, representation_id, f):
+    try:
+        existing_format = next(
+            fo for fo in formats
+            if fo['format_id'] == representation_id
+        )
+    except StopIteration:
+        full_info = formats_dict.get(representation_id, {}).copy()
+        full_info.update(f)
+        formats.append(full_info)
+    else:
+        existing_format.update(f)
+
+    return formats
+
+Test Case from Human:
+
+def test_update_or_append_format_basic():
+    # Case 1: new format → should append
+    formats = []
+    formats_dict = {"vid1": {"format_id": "vid1", "ext": "mp4"}}
+    f = {"format_id": "vid1", "url": "test_url"}
+
+    result = update_or_append_format(formats, formats_dict, "vid1", f)
+
+    assert len(result) == 1
+    assert result[0]["url"] == "test_url"
+
+    # Case 2: existing format → should update, not append
+    f_update = {"format_id": "vid1", "height": 720}
+    result = update_or_append_format(result, formats_dict, "vid1", f_update)
+
+    assert len(result) == 1  # still one, not duplicated
+    assert result[0]["height"] == 720
+
+
+Test Case from the Model:
+
+def test_appends_new_format_from_dict_and_updates():
+    """
+    Tests that if a format does not exist, it's created by combining base info
+    from `formats_dict` and specific updates from `f`, then appended to `formats`.
+    """
+    initial_formats = []
+    formats_dict = {
+        101: {"format_id": 101, "codec": "h264", "resolution": "1920x1080"}
+    }
+    representation_id_to_add = 101
+    update_data = {"bitrate": "5Mbps", "duration": "PT60S"}
+
+    # The function modifies 'initial_formats' in place and returns it.
+    result_formats = update_or_append_format(
+        initial_formats, formats_dict, representation_id_to_add, update_data
+    )
+
+    expected_format = {
+        "format_id": 101,
+        "codec": "h264",
+        "resolution": "1920x1080",
+        "bitrate": "5Mbps",
+        "duration": "PT60S",
+    }
+
+    assert len(result_formats) == 1
+    assert result_formats[0] == expected_format
+    # Verify that the original list object was modified
+    assert initial_formats is result_formats
+
+A Function from youtube-dl-3:
+
+def unescapeHTML(s):
+    if s is None:
+        return None
+    assert type(s) == compat_str
+
+    return re.sub(
+        r'&([^;]+;)', lambda m: _htmlentity_transform(m.group(1)), s)
+
+Test Case from Human:
+
+def test_unescape_html_basic():
+    # Case 1: simple replacements
+    assert unescape_html("a &amp; b") == "a & b"
+
+    # Case 2: multiple entities
+    assert unescape_html("&lt;tag&gt;") == "<tag>"
+
+    # Case 3: unknown entity stays the same
+    assert unescape_html("&unknown;") == "&unknown;"
+
+    # Case 4: None input
+    assert unescape_html(None) is None
+
+
+Test Case from the Model:
+
+# For the purpose of this test, define compat_str and a minimal _htmlentity_transform
+# as they are dependencies not provided in the snippet and are essential for unescapeHTML to run.
+# In a real module, these would be imported.
+
+compat_str = str  # Assume compat_str is a standard string type for Python 3
+
+_htmlentity_transform_map = {
+    'amp;': '&',
+    'lt;': '<',
+    'gt;': '>',
+    'quot;': '"',
+    '#39;': "'",  # Decimal numerical entity for single quote
+    '#x22;': '"',  # Hexadecimal numerical entity for double quote
+    'nbsp;': '\u00A0', # Common named entity
+}
+
+def _htmlentity_transform(entity_name):
+    """
+    A simplified stub for _htmlentity_transform to allow unescapeHTML to be tested.
+    It handles a few common entities and returns the original string with '&' prepended
+    if the entity is not recognized by this stub.
+    """
+    return _htmlentity_transform_map.get(entity_name, '&' + entity_name)
+
+
+def unescapeHTML(s):
+    """
+    The function under test, as provided in the problem description.
+    """
+    if s is None:
+        return None
+    assert type(s) == compat_str
+
+    return re.sub(
+        r'&([^;]+;)', lambda m: _htmlentity_transform(m.group(1)), s)
+
+
+def test_unescape_html_functionality():
+    """
+    Tests various scenarios for the unescapeHTML function.
+    """
+    # Test 1: None input should return None
+    assert unescapeHTML(None) is None
+
+    # Test 2: Basic named HTML entities
+    assert unescapeHTML(compat_str("Hello &amp; World!")) == "Hello & World!"
+    assert unescapeHTML(compat_str("&lt;tag&gt;")) == "<tag>"
+    assert unescapeHTML(compat_str("A &quot;quote&quot;")) == "A \"quote\""
+
+    # Test 3: Multiple different entities in one string
+    assert unescapeHTML(compat_str("Multi &amp; &lt;entities&gt; here with &nbsp; space.")) == "Multi & <entities> here with \u00A0 space."
+
+    # Test 4: String with no HTML entities should remain unchanged
+    assert unescapeHTML(compat_str("Plain text with no entities.")) == "Plain text with no entities."
+    assert unescapeHTML(compat_str("")) == ""
+
+    # Test 5: Malformed entities (missing semicolon) should not be transformed by the regex
+    # The regex `&([^;]+;)` explicitly requires a semicolon.
+    assert unescapeHTML(compat_str("This &amp is not an entity according to regex.")) == "This &amp is not an entity according to regex."
+    assert unescapeHTML(compat_str("Neither is &am.")) == "Neither is &am."
+
+    # Test 6: Decimal numerical character entities
+    assert unescapeHTML(compat_str("It&#39;s a test.")) == "It's a test."
+
+    # Test 7: Hexadecimal numerical character entities
+    assert unescapeHTML(compat_str("Hex double quote: &#x22;")) == "Hex double quote: \""
+
+    # Test 8: Mixed text and entities
+    assert unescapeHTML(compat_str("First&amp;Second&lt;Third&#39;Fourth")) == "First&Second<Third'Fourth"
+
+    # Test 9: Unknown entity handled by the _htmlentity_transform stub
+    # The stub simply prepends '&' if not found in its map.
+    assert unescapeHTML(compat_str("Unknown &foobar; entity.")) == "Unknown &foobar; entity."
+
+A Function from youtube dl 5:
+
+def determine_ext(url, default_ext='unknown_video'):
+    if url is None:
+        return default_ext
+    guess = url.partition('?')[0].rpartition('.')[2]
+    if re.match(r'^[A-Za-z0-9]+$', guess):
+        return guess
+    elif guess.rstrip('/') in KNOWN_EXTENSIONS:
+        return guess.rstrip('/')
+    else:
+        return default_ext
+
+
+
+
+
+
+Test Case from Human:
+
+def test_determine_ext_basic():
+    # Case 1: normal extension
+    assert determine_ext("http://example.com/video.mp4") == "mp4"
+
+    # Case 2: with query string
+    assert determine_ext("http://example.com/video.mp4?download=true") == "mp4"
+
+    # Case 3: invalid extension → fallback
+    assert determine_ext("http://example.com/video.@@@") == "unknown_video"
+
+    # Case 4: None input
+    assert determine_ext(None) == "unknown_video"
+
+Test Case from the Model:
+
+KNOWN_EXTENSIONS = {'mp4', 'webm', 'mkv', 'flv', 'mov'}
+
+def determine_ext(url, default_ext='unknown_video'):
+    if url is None:
+        return default_ext
+    guess = url.partition('?')[0].rpartition('.')[2]
+    if re.match(r'^[A-Za-z0-9]+$', guess):
+        return guess
+    elif guess.rstrip('/') in KNOWN_EXTENSIONS:
+        return guess.rstrip('/')
+    else:
+        return default_ext
+
+def test_determine_ext_with_trailing_slash_and_known_extension():
+    """
+    Tests a URL where the initial 'guess' for the extension has a trailing slash,
+    which should be stripped before checking against KNOWN_EXTENSIONS.
+    """
+    url = "http://example.com/path/to/video.mp4/?quality=high"
+    # Initial guess after rpartition('.') is 'mp4/'.
+    # 'mp4/' does not match the regex `r'^[A-Za-z0-9]+$'`.
+    # 'mp4/'.rstrip('/') becomes 'mp4', which is in KNOWN_EXTENSIONS.
+    assert determine_ext(url) == 'mp4'
+
+
+
+A Function from Youtube dl 6:
+
+def match_filter_func(filter_str):
+    def _match_func(info_dict):
+        if match_str(filter_str, info_dict):
+            return None
+        else:
+            video_title = info_dict.get('title', info_dict.get('id', 'video'))
+            return '%s does not pass filter %s, skipping ..' % (video_title, filter_str)
+    return _match_func
+
+
+Test Case from Human:
+
+def test_match_filter_func_basic(mocker):
+    # Mock match_str behavior
+    mocker.patch(__name__ + ".match_str", return_value=True)
+
+    func = match_filter_func("test")
+
+    # Case 1: passes filter → returns None
+    assert func({"title": "video1"}) is None
+
+    # Case 2: fails filter → returns message
+    mocker.patch(__name__ + ".match_str", return_value=False)
+    func = match_filter_func("test")
+
+    result = func({"title": "video1"})
+    assert "video1 does not pass filter test" in result
+
+
+Test Case from the Model:
+# The function under test, as provided in the problem description.
+# For the purpose of this test, we assume 'match_str' is a global function
+# within the scope where 'match_filter_func' is defined and called.
+# We will mock this global 'match_str' during the test.
+def match_filter_func(filter_str):
+    def _match_func(info_dict):
+        # 'match_str' is an external dependency that needs to be mocked.
+        if match_str(filter_str, info_dict):  # noqa: F821 - match_str is mocked
+            return None
+        else:
+            video_title = info_dict.get('title', info_dict.get('id', 'video'))
+            return '%s does not pass filter %s, skipping ..' % (video_title, filter_str)
+    return _match_func
+
+# Define a placeholder for 'match_str' so 'match_filter_func' can be parsed.
+# This dummy function will be replaced by the mock during testing.
+def match_str(filter_str, info_dict):
+    """Dummy match_str function, expected to be mocked during tests."""
+    raise NotImplementedError("This function should be mocked for tests.")
+
+@pytest.mark.parametrize(
+    "filter_str, info_dict, match_str_return_value, expected_result",
+    [
+        # Scenario 1: Filter matches (match_str returns True)
+        ("keyword", {"title": "Matched Video", "id": "v1"}, True, None),
+
+        # Scenario 2: Filter does not match (match_str returns False), title present
+        ("bad_filter", {"title": "Unmatched Video", "id": "v2"}, False,
+         "Unmatched Video does not pass filter bad_filter, skipping .."),
+
+        # Scenario 3: Filter does not match (match_str returns False), only ID present
+        ("another_bad", {"id": "v3"}, False,
+         "v3 does not pass filter another_bad, skipping .."),
+
+        # Scenario 4: Filter does not match (match_str returns False), neither title nor ID
+        ("no_info", {"duration": 100}, False,
+         "video does not pass filter no_info, skipping .."),
+
+        # Scenario 5: Empty filter string, match_str returns True
+        ("", {"title": "Any Video", "id": "v4"}, True, None),
+
+        # Scenario 6: Empty filter string, match_str returns False
+        ("", {"title": "Another Video", "id": "v5"}, False,
+         "Another Video does not pass filter , skipping .."),
+    ]
+)
+@patch('__main__.match_str')  # Patch the global 'match_str' in the current module's scope
+def test_match_filter_func_behavior(
+    mock_match_str, filter_str, info_dict, match_str_return_value, expected_result
+):
+    """
+    Tests that match_filter_func correctly returns None when the filter matches,
+    and a formatted error message when it does not, verifying video_title fallback logic.
+    """
+    mock_match_str.return_value = match_str_return_value
+
+    # Get the inner _match_func
+    _match_func = match_filter_func(filter_str)
+
+    # Call the inner function with info_dict
+    result = _match_func(info_dict)
+
+    # Assert the expected return value
+    assert result == expected_result
+
+    # Verify that match_str was called exactly once with the correct arguments
+    mock_match_str.assert_called_once_with(filter_str, info_dict)
+
+A Function from youtube dl7:
+
+def parse_age_limit(s):
+    if s is None:
+        return None
+    m = re.match(r'^(?P<age>\d{1,2})\+?$', s)
+    return int(m.group('age')) if m else US_RATINGS.get(s, None)
+
+Test Case from Human:
+
+def test_parse_age_limit_basic():
+    # Case 1: numeric age
+    assert parse_age_limit("18") == 18
+
+    # Case 2: numeric with plus
+    assert parse_age_limit("13+") == 13
+
+    # Case 3: known rating
+    assert parse_age_limit("R") == 16
+
+    # Case 4: None input
+    assert parse_age_limit(None) is None
+
+    # Case 5: unknown value
+    assert parse_age_limit("UNKNOWN") is None
+
+
+Test Case from the Model:
+
+# Define US_RATINGS as it's an external dependency for the function
+US_RATINGS = {
+    'TV-Y': 0,
+    'TV-Y7': 7,
+    'TV-G': 0,
+    'TV-PG': 7,
+    'TV-14': 14,
+    'TV-MA': 18,
+    'G': 0,
+    'PG': 0,
+    'PG-13': 13,
+    'R': 17,
+    'NC-17': 17,
+}
+
+# The function under test
+def parse_age_limit(s):
+    if s is None:
+        return None
+    m = re.match(r'^(?P<age>\d{1,2})\+?$', s)
+    return int(m.group('age')) if m else US_RATINGS.get(s, None)
+
+@pytest.mark.parametrize(
+    "input_string, expected_output",
+    [
+        (None, None),               # Test case: None input
+        ("7", 7),                   # Test case: numeric age (single digit)
+        ("12", 12),                 # Test case: numeric age (two digits)
+        ("18+", 18),                # Test case: numeric age with '+'
+        ("0+", 0),                  # Test case: numeric age 0 with '+'
+        ("99", 99),                 # Test case: max two-digit age
+        ("TV-Y7", 7),               # Test case: US_RATINGS lookup
+        ("TV-MA", 18),              # Test case: Another US_RATINGS lookup
+        ("PG-13", 13),              # Test case: Yet another US_RATINGS lookup
+        ("invalid", None),          # Test case: no match, no lookup
+        ("123", None),              # Test case: regex mismatch (too many digits)
+        ("7a", None),               # Test case: regex mismatch (trailing char)
+        ("", None),                 # Edge case: empty string
+        ("+", None),                # Edge case: only '+'
+    ],
+)
+def test_parse_age_limit(input_string, expected_output):
+    assert parse_age_limit(input_string) == expected_output
+
+A Function from Youtube dl9:
+
+def parse_filter(tokens):
+    filter_parts = []
+    for type, string, start, _, _ in tokens:
+        if type == tokenize.OP and string == ']':
+            return ''.join(filter_parts)
+        else:
+            filter_parts.append(string)
+
+Test Case from Human:
+
+
+
+def test_parse_filter_basic():
+    tokens = [
+        (tokenize.NAME, "height", None, None, None),
+        (tokenize.OP, ">", None, None, None),
+        (tokenize.NUMBER, "720", None, None, None),
+        (tokenize.OP, "]", None, None, None),
+    ]
+
+    assert parse_filter(tokens) == "height>720"
+
+Test Case from the Model:
+
+# The function under test (provided by the user)
+def parse_filter(tokens):
+    filter_parts = []
+    # tokens are expected to be tuples like (type, string, start, end, line)
+    for type, string, start, _, _ in tokens:
+        if type == tokenize.OP and string == ']':
+            return ''.join(filter_parts)
+        else:
+            filter_parts.append(string)
+    # If the loop completes without encountering 'tokenize.OP' and ']',
+    # the function implicitly returns None. Explicitly returning it for clarity.
+    return None
+
+# Helper to create a token tuple with dummy values for unused parts (start, end, line)
+def _make_token(token_type, token_string):
+    return (token_type, token_string, (1, 0), (1, len(token_string)), token_string)
+
+@pytest.mark.parametrize(
+    "test_name, tokens, expected_output",
+    [
+        (
+            "stops at the first OP ']' in a sequence",
+            [
+                _make_token(tokenize.NAME, 'column_name'),
+                _make_token(tokenize.OP, '='),
+                _make_token(tokenize.NUMBER, '100'),
+                _make_token(tokenize.OP, ']'),  # Termination token
+                _make_token(tokenize.NAME, 'ignored_part')
+            ],
+            'column_name=100'
+        ),
+        (
+            "returns an empty string if OP ']' is the very first token",
+            [
+                _make_token(tokenize.OP, ']'),  # Termination token
+                _make_token(tokenize.NAME, 'some_name')
+            ],
+            ''
+        ),
+        (
+            "stops correctly when OP ']' is the last token",
+            [
+                _make_token(tokenize.NAME, 'filter_field'),
+                _make_token(tokenize.OP, '>'),
+                _make_token(tokenize.STRING, "'value'"),
+                _make_token(tokenize.OP, ']')  # Termination token
+            ],
+            "filter_field>'value'"
+        ),
+        (
+            "returns None if no OP ']' token is found",
+            [
+                _make_token(tokenize.NAME, 'name'),
+                _make_token(tokenize.OP, '.'),
+                _make_token(tokenize.NAME, 'startswith'),
+                _make_token(tokenize.OP, '('),
+                _make_token(tokenize.STRING, "'prefix'"),
+                _make_token(tokenize.OP, ')')
+            ],
+            None
+        ),
+        (
+            "returns None for an empty list of tokens",
+            [],
+            None
+        ),
+        (
+            "includes non-OP ']' strings and stops at actual OP ']'",
+            [
+                _make_token(tokenize.NAME, 'item'),
+                _make_token(tokenize.STRING, ']'),  # This ']' is part of a string, not an operator
+                _make_token(tokenize.OP, '='),
+                _make_token(tokenize.NUMBER, '1'),
+                _make_token(tokenize.OP, ']'),  # This ']' is an operator, should stop here
+                _make_token(tokenize.NAME, 'should_be_ignored')
+            ],
+            'item]=1'
+        ),
+        (
+            "returns None if only non-OP ']' strings are present",
+            [
+                _make_token(tokenize.NAME, 'my_list'),
+                _make_token(tokenize.STRING, ']'),
+                _make_token(tokenize.NUMBER, '0')
+            ],
+            None
+        ),
+        (
+            "handles complex filter expressions",
+            [
+                _make_token(tokenize.NAME, 'data'),
+                _make_token(tokenize.OP, '.'),
+                _make_token(tokenize.NAME, 'loc'),
+                _make_token(tokenize.OP, '['),
+                _make_token(tokenize.NAME, 'data'),
+                _make_token(tokenize.OP, '.'),
+                _make_token(tokenize.NAME, 'column'),
+                _make_token(tokenize.OP, '=='),
+                _make_token(tokenize.NUMBER, '5'),
+                _make_token(tokenize.OP, ']') # Termination
+            ],
+            'data.loc[data.column==5'
+        ),
+    ]
+)
+def test_parse_filter_functionality(test_name, tokens, expected_output):
+    """
+    Test the parse_filter function for various scenarios including
+    correct termination, edge cases like empty input or first/last token being ']',
+    and handling of non-OP ']' characters.
+    """
+    assert parse_filter(tokens) == expected_output
+
+A Function from Youtube dl 10:
+
+
+def strip_jsonp(code):
+    return re.sub(
+        r'(?s)^[a-zA-Z0-9_]+\s*\(\s*(.*)\);?\s*?(?://[^\n]*)*$', r'\1', code)
+
+
+Test Case from Human:
+
+def test_strip_jsonp_basic():
+    # Case 1: standard JSONP
+    assert strip_jsonp("callback({\"a\":1});") == "{\"a\":1}"
+
+    # Case 2: with whitespace
+    assert strip_jsonp("cb ( {\"b\":2} ) ;") == "{\"b\":2}"
+
+    # Case 3: with trailing comment
+    assert strip_jsonp("cb({\"c\":3}); // comment") == "{\"c\":3}"
+
+    # Case 4: no wrapping → unchanged
+    assert strip_jsonp("{\"d\":4}") == "{\"d\":4}"
+
+
+Test Case from the Model:
+
+def test_strip_jsonp_standard_case_replaces_with_space():
+    code = 'myCallback({"data": "example", "status": "success"});'
+    assert strip_jsonp(code) == ' '
+
+
 
