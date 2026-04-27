@@ -1,0 +1,12 @@
+def check_required_arguments(argument_spec, module_parameters):
+    missing = []
+    if argument_spec is None:
+        return missing
+    for (k, v) in argument_spec.items():
+        required = v.get('required', False)
+        if required and k not in module_parameters:
+            missing.append(k)
+    if missing:
+        msg = "missing required arguments: %s" % ", ".join(missing)
+        raise TypeError(msg)
+    return missing

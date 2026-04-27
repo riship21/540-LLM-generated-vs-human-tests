@@ -19,3 +19,8 @@ Thumbs.db
 open_source_eval/
 open_source_benchmark/__pycache__/
 *.pyc
+
+# paired coverage benchmark temp outputs
+paired_coverage_benchmark/_coverage_results/*.json
+paired_coverage_benchmark/_coverage_results/*.out.txt
+paired_coverage_benchmark/_coverage_results/*.err.txt

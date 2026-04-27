@@ -1,0 +1,9 @@
+import re
+
+def strip_jsonp(code):
+    return re.sub(
+        r'(?s)^[a-zA-Z0-9_]+\s*\(\s*(.*)\);?\s*?(?://[^
+]*)*$',
+        r'',
+        code,
+    )
