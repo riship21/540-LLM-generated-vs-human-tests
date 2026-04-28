@@ -158,6 +158,25 @@ def test_merge_multiple_groups():
     assert merge_intervals([(1, 3), (2, 6), (8, 10)]) == [(1, 6), (8, 10)]
 
 
+Friend 3:
+
+
+
+def test_normalize_1():
+    assert normalize_username("Daniel Joy") == "daniel-joy"
+def test_normalize_2():
+    assert normalize_username("Apples and Oranges and 12345") == "apples-and-oranges-and-12345"
+def test_normalize_3():
+    assert normalize_username("            ") == ""
+
+
+def test_merge_1():
+    assert merge_intervals([(1, 4), (2, 3)]) == [(1, 4)]
+def test_merge_2():
+    assert merge_intervals([(8, 10), (3, 1)]) == [(3, 1), (8, 10)]
+def test_merge_3():
+    assert merge_intervals([(-2, -2), (0, 18), (-2, 14)]) == [(-2, 18)]
+
 
 LLM Test Cases:
 
